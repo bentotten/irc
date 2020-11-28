@@ -8,8 +8,6 @@ import re
 import os
 from os import path
 import subprocess
-import win32pipe
-import win32file
 
 
 nick = 'Guest'  # User can change this in irc with /nick <NICK>
@@ -28,11 +26,11 @@ def read_key():
 def rm_old():
     print(f'Searching for {client}')
     status = path.exists(client)    # Check existance of io
-    if status == False:             # If doesnt exist, return
+    if status is False:             # If doesnt exist, return
         print(f'{client} cleared')
         return 0
     else:                           # If file exists, delete it
-        print(f'Attempting {bashCommand}')
+        print(f'Attempting to remove {client}')
         os.remove(client)
         if path.exists(client) is True:
             print(f'Error: Unable to delete {client}')
@@ -42,23 +40,20 @@ def rm_old():
 
 
 def make_io():
-    if rm_old() is 0:   # Remove old client.io
-        if os.name is 'posix':   # If running on a linux system
-            assert os.mkfifo(clientPath, 0o600), "Cannot create fifo"
-        elif os.name is 'nt': # If running on a windows system
-            p = win32pipe.CreateNamedPipe(r'\\.\pipe\ircclient_pipe', win32pipe.PIPE_ACCESS_DUPLEX, win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_WAIT, 1, 65536, 65536,300,None)
-            win32pipe.ConnectNamedPipe(p, None)
+    if rm_old() == 0:   # Remove old client.io
+        if os.name == 'posix':   # If running on a linux system
+            os.mkfifo(clientPath, 0o600)
+        elif os.name == 'nt':  # If running on a windows system
+            print('Windows Operating system not supported')
 
         else:
-            print('Unsupported Operating System. Please run on Windows or Linux')
+            print('Unsupported Operating System. Please run on Linux')
             return 1
-            
+
 
 def main():
     read_key()  # Read key for server
     make_io()   # Make client io
-    
-    
 
 
 # Launch main
