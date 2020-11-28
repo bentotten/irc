@@ -20,9 +20,10 @@ clientPath = './' + client
 def read_key():
     with open('config.txt', 'r') as file:
         key = file.read()
-    print(key)
+    return key
 
 
+# Removes old pipe
 def rm_old():
     print(f'Searching for {client}')
     status = path.exists(client)    # Check existance of io
@@ -39,10 +40,11 @@ def rm_old():
             return 0
 
 
+# Makes new pipe
 def make_io():
     if rm_old() == 0:   # Remove old client.io
         if os.name == 'posix':   # If running on a linux system
-            os.mkfifo(clientPath, 0o600)
+            os.mkfifo(clientPath)
         elif os.name == 'nt':  # If running on a windows system
             print('Windows Operating system not supported')
 
@@ -51,9 +53,20 @@ def make_io():
             return 1
 
 
+# Connects to server with correct naming
+def connect(key):
+    msg = f'NICK {nick}\\nUSER 0 0 0 :{nick}\\nJOIN #welcome {key}'
+    print(clientPath)
+    fifo = open(clientPath, "w")
+    fifo.write("Hello World!\n")
+    fifo.close()
+    print('success')
+
+# Main
 def main():
-    read_key()  # Read key for server
+    key = read_key()  # Read key for server
     make_io()   # Make client io
+    connect(key)
 
 
 # Launch main
