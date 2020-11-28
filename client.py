@@ -4,11 +4,12 @@
 # IRC: Client
 
 import sys
-import re
+# import re
 import os
 from os import path
-import subprocess
-
+import socket
+# import ssl
+serverAddress = ('localhost', 5000)
 
 nick = 'Guest'  # User can change this in irc with /nick <NICK>
 key = ''
@@ -56,17 +57,62 @@ def make_io():
 # Connects to server with correct naming
 def connect(key):
     msg = f'NICK {nick}\\nUSER 0 0 0 :{nick}\\nJOIN #welcome {key}'
-    print(clientPath)
+    print('Writing to pipe')
     fifo = open(clientPath, "w")
-    fifo.write("Hello World!\n")
+    fifo.write(msg)
     fifo.close()
     print('success')
 
+
+def foo():
+    # package = "SOCKET WORKING"
+    # hostname = serverAddress[0]
+    # port = serverAddress[1]
+
+    # Create a TCP/IP socket
+    sock = socket.create_connection(serverAddress)
+
+    try:
+        # Send data
+        message = 'This is the message.  It will be repeated.'
+        sys.stderr.write(f'Sending "{message}"\n')
+        sock.sendall(message.encode())
+
+        amount_received = 0
+        amount_expected = len(message)
+
+        while amount_received < amount_expected:
+            data = sock.recv(16)
+            amount_received += len(data)
+            sys.stderr.write(f'Received "{data}"\n')
+
+    finally:
+        sys.stderr.write('Closing socket\n')
+        sock.close()
+
+    # context = ssl.create_default_context()
+    # Connect
+    # sys.stderr.write(f'Connecting to {serverAddress}')
+    # with socket.create_connection(serverAddress) as sock:
+        # with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+            # print(ssock.version())
+            # ssock.send(package.encode())
+            # while True:
+                # data = ssock.recv(2048)
+                # if (len(data) < 1):
+                    # break
+                # print(data)
+
+    # CLOSE SOCKET CONNECTION
+    # ssock.close()
+
+
 # Main
 def main():
-    key = read_key()  # Read key for server
+    # key = read_key()  # Read key for server
     make_io()   # Make client io
-    connect(key)
+    # connect(key)
+    foo()
 
 
 # Launch main
