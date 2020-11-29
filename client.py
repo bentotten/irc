@@ -9,7 +9,7 @@ from os import path
 import socket
 import threading
 import time
-# import re
+import re
 # import ssl
 
 
@@ -19,7 +19,6 @@ nick = 'Guest'  # User can change this in irc with /nick <NICK>
 client = 'client.io'  # Name of actual FIFO .io
 clientPath = './' + client
 instructions = 'Welcome to b-IRC! To send a message, type "./m Hello!"'
-stop = True
 
 
 # Reads in key for server connection
@@ -93,31 +92,31 @@ class pipe(threading.Thread):
     def __init__(self, sock):
         threading.Thread.__init__(self)
         self.sock = sock
+        self.stop = True
 
     def run(self):
-        global stop
         try:
-            while stop:
+            while self.stop:
                 print("Opening FIFO...")
                 with open(clientPath) as fifo:
                     print("FIFO opened")
-                    while stop:
+                    while True:
                         data = fifo.read()
-                        if len(data) == 0:
+                        check = re.sub(r'\W+', '', data)
+                        if '_stop' == check:    # If user is closing client
+                            print('Stop command. Stopping client')
+                            self.stop = False
+                            break
+                        elif len(data) == 0:
                             print("Writer closed")
                             break
-                        print('Read: "{0}"'.format(data))
-                        send(data, self.sock)
+                        else:
+                            print('Read: "{0}"'.format(data))
+                            send(data, self.sock)
         except socket.error as error:
             sys.stderr.write(f'Error: {error}')
-            stop = False    # Signal other thread to stop
-            self.sock.close()
-            #return 1
         finally:
-            print(f'Closing Pipe\nStop: {stop}')
-            stop = False
-            print(f'Stop now: {stop}')
-            #return 0
+            print(f'Closing Pipe')
 
 
 # Listens for messages from the server
@@ -126,28 +125,24 @@ class listen(threading.Thread):
     def __init__(self, sock):
         threading.Thread.__init__(self)
         self.sock = sock
+        self.stop = True
 
     def run(self):
-        global stop
         try:
-            while stop:
+            #while stop:
+            while self.stop:
                 data = self.sock.recv(2048)
                 print(f'Received "{data}"\n')
-                if len(data) == 0:
-                    break
+                if len(data) == 0:      # If server disconnect
+                    print(f'Server abrupt disconnect')
+                    self.stop = False
 
         except socket.error as error:
-            sys.stderr.write(f'Error: {error}i. Exiting...')
-            stop = False
-            #return 1
+            sys.stderr.write(f'Error: {error}')
 
         finally:
-            print(f'Closing Listening\nStop: {stop}')
-            stop = False
-            print(f'Stop now: {stop}')
-            n = threading.active_count()
-            print(f'Threads: {n}')
-            #return 0
+            print(f'Closing Listening')
+            return
 
 
 # Send piped inputs to the server
@@ -169,28 +164,38 @@ def main():
     make_io()   # Make client io
     sock = connection()  # Connect to server
 
-    # Start threading
+    # Start threading and set as Daemons
     t1 = pipe(sock)
     t2 = listen(sock)
+    t1.setDaemon(True)  # Set to non-blocking thread
+    t2.setDaemon(True)  # Set to non-blocking thread
 
     # starting thread 1
-    x = t1.start()
+    t1.start()
     # starting thread 2
     t2.start()
 
-    print(f'{x}')
-
+    print('Joining thread 1')
+    t1.join(3)
+    print('Joining thread 2')
+    t2.join(3)
     n = threading.active_count()
     print(f'Threads: {n}')
-    # wait until thread 1 is completely executed
-    print('Joining thread 1')
-    t1.join()
-    # wait until thread 2 is completely executed
-    print('Joining thread 2')
-    t2.join()
+
+    print('Is t1 alive?')
+    print(t1.is_alive())    # Check if T1 timed out
+    print('Is t2 alive?')
+    print(t2.is_alive())    # Check if T2 timed out
+
+    while t1.is_alive() and t2.is_alive():
+        print('Looping until t1 or t2 finishes')
+        t1.join(3)
+        t2.join(3)
+
 
     # Shutdown connection
-    sock.shutdown(socket.SHUT_WR)
+    # sock.shutdown(socket.SHUT_WR)
+    print('Closing socket connection')
     sock.close()
     print("Thank you for using b-IRC!\nExiting")
 
