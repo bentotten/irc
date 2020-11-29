@@ -6,7 +6,7 @@ import ssl
 
 # path = "./client.io"
 # fifo = open(path, "r")
-serverAddress = ('localhost', 5000)
+serverAddress = ('34.83.242.37', 6667)
 
 
 def eprint(*args, **kwargs):
@@ -18,9 +18,9 @@ def main():
         # print("Received: " + line,)
     # fifo.close()
 
-    print('If no cert found, run:  context.load_cert_chain(certfile="cert.pem", keyfile="cert.pem")')
+    print('If no cert found, run: ./make_cert.sh")')
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain(certfile="cert.pem", keyfile="cert.pem")
+    context.load_cert_chain(certfile="certificate.crt", keyfile="certificate.key")
 
     # Create TCP/IP scoket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sock:
