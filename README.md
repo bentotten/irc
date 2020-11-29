@@ -1,1 +1,4 @@
-# irc
+# IRC
+
+### SPECIAL THANKS ###
+https://www.geeksforgeeks.org/multithreading-python-set-1/

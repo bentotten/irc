@@ -4,11 +4,13 @@
 # IRC: Client
 
 import sys
-# import re
 import os
 from os import path
 import socket
+import threading
+# import re
 # import ssl
+
 
 # Reads in key for server connection
 def read_key():
@@ -58,8 +60,13 @@ def make_io():
             return 1
 
 
+# Create a TCP/IP socket
+def connect():
+    return socket.create_connection(serverAddress)
+
+
 # Connects to server with correct naming
-def pipe():
+def pipe(sock):
     while True:
         print("Opening FIFO...")
         with open(clientPath) as fifo:
@@ -70,29 +77,20 @@ def pipe():
                     print("Writer closed")
                     break
                 print('Read: "{0}"'.format(data))
+                send(data, sock)
 
 
-def foo():
+def listen(sock):
     # package = "SOCKET WORKING"
     # hostname = serverAddress[0]
     # port = serverAddress[1]
 
-    # Create a TCP/IP socket
-    sock = socket.create_connection(serverAddress)
-
     try:
-        # Send data
-        message = 'This is the message.  It will be repeated.'
-        sys.stderr.write(f'Sending "{message}"\n')
-        sock.sendall(message.encode())
-
-        amount_received = 0
-        amount_expected = len(message)
-
-        while amount_received < amount_expected:
-            data = sock.recv(16)
-            amount_received += len(data)
+        while True:
+            data = sock.recv(2048)
             sys.stderr.write(f'Received "{data}"\n')
+    except socket.error as error:
+        sys.stderr.write(f'Error: {error}')
 
     finally:
         sys.stderr.write('Closing socket\n')
@@ -115,17 +113,31 @@ def foo():
     # ssock.close()
 
 
+# Send piped inputs to the server
+def send(msg, sock):
+    # Send data
+    sys.stderr.write(f'Sending "{msg}"\n')
+    sock.sendall(msg.encode())
+
+
 # Main
 def main():
-    msg = ''
-    if len(sys.argv) == 1:
-        print('Creating connection')
-    else:
-        print(len(sys.argv))
-    # key = read_key()  # Read key for server
-    #make_io()   # Make client io
-    pipe()
-    #foo()  # Currently reads and writes to socket TODO
+    make_io()   # Make client io
+    sock = connect() # Connect to server
+    t1 = threading.Thread(pipe(sock))  # Listen for user writing chat messages
+    t2 = threading.Thread(listen(sock)) # Listen for messages from the server
+
+    # starting thread 1
+    t1.start()
+    # starting thread 2
+    t2.start()
+
+    # wait until thread 1 is completely executed
+    t1.join()
+    # wait until thread 2 is completely executed
+    t2.join()
+
+    print("Done")
 
 
 # Launch main
