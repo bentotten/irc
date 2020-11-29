@@ -12,21 +12,23 @@ import threading
 # import ssl
 
 
+
+
+# Program initial variables
+serverAddress = ('Localhost', 5000)
+nick = 'Guest'  # User can change this in irc with /nick <NICK>
+client = 'client.io'  # Name of actual FIFO .io
+clientPath = './' + client
+instructions = 'Welcome to b-IRC! To send a message, type "./m Hello!"'
+stop = True
+
+
 # Reads in key for server connection
 def read_key():
     with open('config.txt', 'r') as file:
         key = file.read()
     return key
 
-
-# Program initial variables
-serverAddress = ('Localhost', 5000)
-nick = 'Guest'  # User can change this in irc with /nick <NICK>
-key = read_key()
-client = 'client.io'  # Name of actual FIFO .io
-clientPath = './' + client
-init_msg = f'NICK {nick}\\nUSER 0 0 0 :{nick}\\nJOIN #welcome {key}'
-instructions = 'Welcome to mIRC! To send a message, type "./m Hello!"'
 
 # Removes old pipe
 def rm_old():
@@ -73,17 +75,28 @@ class pipe(threading.Thread):
         self.sock = sock
 
     def run(self):
-        while True:
+        global stop
+        while stop:
             print("Opening FIFO...")
-            with open(clientPath) as fifo:
-                print("FIFO opened")
-                while True:
-                    data = fifo.read()
-                    if len(data) == 0:
-                        print("Writer closed")
-                        break
-                    print('Read: "{0}"'.format(data))
-                    send(data, self.sock)
+            try:
+                with open(clientPath) as fifo:
+                    print("FIFO opened")
+                    while True:
+                        data = fifo.read()
+                        if len(data) == 0:
+                            print("Writer closed")
+                            break
+                        print('Read: "{0}"'.format(data))
+                        send(data, self.sock)
+            except socket.error as error:
+                sys.stderr.write(f'Error: {error}i. Exiting...')
+                stop = False
+                self.sock.close()
+                return
+            finally:
+                print('Closing')
+                stop = False
+                return
 
 
 # Listens for messages from the server
@@ -94,6 +107,7 @@ class listen(threading.Thread):
         self.sock = sock
 
     def run(self):
+        global stop
         try:
             while True:
                 data = self.sock.recv(2048)
@@ -102,11 +116,14 @@ class listen(threading.Thread):
                     break
 
         except socket.error as error:
-            sys.stderr.write(f'Error: {error}')
+            sys.stderr.write(f'Error: {error}i. Exiting...')
+            stop = False
+            return
 
         finally:
-            print('Closing socket\n')
-            self.sock.close()
+            print('Closing Listening\n')
+            stop = False
+            return
 
 
 # Send piped inputs to the server
@@ -121,7 +138,10 @@ def send(msg, sock):
 
 # Main
 def main():
+    key = read_key()
+    init_msg = f'NICK {nick}\\nUSER 0 0 0 :{nick}\\nJOIN #welcome {key}'
     print(instructions)
+
     make_io()   # Make client io
     sock = connection() # Connect to server
 
@@ -135,13 +155,16 @@ def main():
     t2.start()
 
     # wait until thread 1 is completely executed
+    print('Joining thread 1')
     t1.join()
     # wait until thread 2 is completely executed
+    print('Joining thread 2')
     t2.join()
 
     # Shutdown connection
     sock.shutdown(socket.SHUT_WR)
-    print("Done")
+    sock.close()
+    print("Thank you for using b-IRC!\nExiting")
 
 
 # Launch main
