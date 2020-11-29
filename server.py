@@ -21,10 +21,11 @@ def eprint(*args, **kwargs):
 
 def check(data, client, connection):
     data = str(data.decode().strip().lower())
-    re.sub(r'[^a-zA-Z0-9]', '', data)
+    data = re.sub(r'\W+', '', data)
     print(f'Data: {data}')
-    if data == "'disconnect'":
+    if data == "_disconnect":
         print(f'{client} disconnecting')
+        connection.sendall(data.encode())
         connection.close()
         print(f'{client} has disconnected')
 

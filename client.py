@@ -3,6 +3,11 @@
 # CS594 Final Project
 # IRC: Client
 
+# Use provided code to send messages by typing './m <MESSAGE>'
+# Commands:
+# _stop        : Client exits
+# _disconnect  : Client signals server to disconnect client
+
 import sys
 import os
 from os import path
@@ -66,24 +71,16 @@ def connection():
 
 
 def attempt_reconnect(sock):
-    i = 0
-    connected = False
-    while not connected and i < 10:
+    print('Attemping reconnect:')
+    sock.close()
+    for i in range(5):
         try:
-            print('Attempting to reconnect...')
-            sock.close()    # Close current socket
-            sock = connection() # Attempt reconnect
-            connected = True
-            print('Reconnected to server')
-
-            return True
+            sock = connection()
+            return
         except socket.error:
-            time.sleep(1)   # Sleep for 1 second if not successful
-            i += 1
-        finally:
-            print('Unable to reconnect')
-            return False
-
+            print('.')
+            time.sleep(3)
+    print('Unable to reconnect to server.')
 
 
 # Listens for FIFO and sends messages to server from FIFO
@@ -116,7 +113,7 @@ class pipe(threading.Thread):
         except socket.error as error:
             sys.stderr.write(f'Error: {error}')
         finally:
-            print(f'Closing Pipe')
+            print('Closing Pipe')
 
 
 # Listens for messages from the server
@@ -129,19 +126,18 @@ class listen(threading.Thread):
 
     def run(self):
         try:
-            #while stop:
             while self.stop:
                 data = self.sock.recv(2048)
                 print(f'Received "{data}"\n')
                 if len(data) == 0:      # If server disconnect
-                    print(f'Server abrupt disconnect')
-                    self.stop = False
+                    print('Server abrupt disconnect.')
+                    return 1
 
         except socket.error as error:
             sys.stderr.write(f'Error: {error}')
 
         finally:
-            print(f'Closing Listening')
+            print('Closing Listening')
             return
 
 
@@ -173,25 +169,26 @@ def main():
     # starting thread 1
     t1.start()
     # starting thread 2
-    t2.start()
+    x = t2.start()
 
-    print('Joining thread 1')
     t1.join(3)
-    print('Joining thread 2')
+    print('Joined thread 1')
     t2.join(3)
-    n = threading.active_count()
-    print(f'Threads: {n}')
+    print('Joined thread 2')
 
     print('Is t1 alive?')
     print(t1.is_alive())    # Check if T1 timed out
     print('Is t2 alive?')
     print(t2.is_alive())    # Check if T2 timed out
 
+    print(f't2 returned a value: {x}')
+
     while t1.is_alive() and t2.is_alive():
-        print('Looping until t1 or t2 finishes')
         t1.join(3)
         t2.join(3)
-
+    # If server disconnect, t2 will be dead
+    if not t2.is_alive():
+        attempt_reconnect(sock)
 
     # Shutdown connection
     # sock.shutdown(socket.SHUT_WR)
