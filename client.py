@@ -27,7 +27,7 @@ key = read_key()
 client = 'client.io'  # Name of actual FIFO .io
 clientPath = './' + client
 init_msg = f'NICK {nick}\\nUSER 0 0 0 :{nick}\\nJOIN #welcome {key}'
-instructions = 'Welcome to mIRC! To send a message, type "Hello! >> client.io"'
+instructions = 'Welcome to mIRC! To send a message, type "./m Hello!"'
 
 # Removes old pipe
 def rm_old():
@@ -95,9 +95,6 @@ class listen(threading.Thread):
         self.sock = sock
 
     def run(self):
-        # msg = "test test"  # TODO Delete me
-        # sock.sendall(msg.encode())
-        # send(msg, sock)
         try:
             while True:
                 data = self.sock.recv(16)
@@ -112,32 +109,15 @@ class listen(threading.Thread):
             print('Closing socket\n')
             self.sock.close()
 
-    # context = ssl.create_default_context()
-    # Connect
-    # sys.stderr.write(f'Connecting to {serverAddress}')
-    # with socket.create_connection(serverAddress) as sock:
-        # with context.wrap_socket(sock, server_hostname=hostname) as ssock:
-            # print(ssock.version())
-            # ssock.send(package.encode())
-            # while True:
-                # data = ssock.recv(2048)
-                # if (len(data) < 1):
-                    # break
-                # print(data)
-
-    # CLOSE SOCKET CONNECTION
-    # ssock.close()
-
 
 # Send piped inputs to the server
 def send(msg, sock):
     try:
         # Send data
-        sys.stderr.write(f'Sending "{msg}"\n')
+        print(f'Sending "{msg}"\n')
         sock.sendall(msg.encode())
     finally:
-        print('Closing socket\n')
-        sock.close()
+        print(f'{msg} sent\n')
 
 
 # Main
