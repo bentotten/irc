@@ -67,12 +67,11 @@ def connection():
 
 
 # Listens for FIFO and sends messages to server from FIFO
-class pipe(sock, threading.Thread):
+class pipe(threading.Thread):
     # Constructor
-    def __init__(self, i):
-        threading.Thread.__init__(self):
-            threading.Thread.__init__(self)
-            self.i = i
+    def __init__(self, sock):
+        threading.Thread.__init__(self)
+        self.sock = sock
 
     def run(self):
         while True:
@@ -85,7 +84,7 @@ class pipe(sock, threading.Thread):
                         print("Writer closed")
                         break
                     print('Read: "{0}"'.format(data))
-                    send(data, sock)
+                    send(data, self.sock)
 
 
 def listen(sock):
@@ -144,19 +143,19 @@ def main():
     sock = connection() # Connect to server
 
     # Start threading
-
-    t2 = threading.Thread(listen(sock)) # Listen for messages from the server
+    t1 = pipe(sock)
+    #t2 = threading.Thread(listen(sock)) # Listen for messages from the server
     # pipe(sock) # TODO Put back in thread
 
     # starting thread 1
     t1.start()
     # starting thread 2
-    t2.start()
+    #t2.start()
 
     # wait until thread 1 is completely executed
     t1.join()
     # wait until thread 2 is completely executed
-    t2.join()
+    #t2.join()
 
     # Shutdown connection
     sock.shutdown(socket.SHUT_WR)
