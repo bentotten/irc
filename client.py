@@ -21,7 +21,7 @@ def read_key():
 
 
 # Program initial variables
-serverAddress = ('34.83.242.37', 6667)
+serverAddress = ('Localhost', 5000)
 nick = 'Guest'  # User can change this in irc with /nick <NICK>
 key = read_key()
 client = 'client.io'  # Name of actual FIFO .io
