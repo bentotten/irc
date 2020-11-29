@@ -8,7 +8,6 @@ import os
 from os import path
 import socket
 import threading
-import time
 # import re
 # import ssl
 
@@ -97,7 +96,7 @@ class listen(threading.Thread):
     def run(self):
         try:
             while True:
-                data = self.sock.recv(16)
+                data = self.sock.recv(2048)
                 print(f'Received "{data}"\n')
                 if len(data) == 0:
                     break

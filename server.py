@@ -1,8 +1,14 @@
+# TODO:
+# - Make new client connections run on their own thread, to be killed on their
+# own thread
+
 # import os
 import sys
 import socket
 import ssl
+import re
 # import subprocess
+
 
 # path = "./client.io"
 # fifo = open(path, "r")
@@ -11,6 +17,15 @@ serverAddress = ('localhost', 5000)
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
+
+
+def check(data, client):
+    data = str(data.decode().lower())
+    re.sub(r'[^a-zA-Z0-9]', '', data)
+    print(f'Data: {data}')
+    if data == 'disconnect':
+        socket.close()
+        print(f'{client} has disconnected')
 
 
 def main():
@@ -43,8 +58,10 @@ def main():
 
                 # Get data in chunks and retransmit it
                 while True:
-                    data = connection.recv(16)
+                    data = connection.recv(2048)
                     print('received "%s"' % data)
+                    # Check for commands
+                    check(data, clientAddress)
                     # Send data to connected clients
                     if data:
                         print('sending data back to the client')
