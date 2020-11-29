@@ -9,19 +9,21 @@ import os
 from os import path
 import socket
 # import ssl
-serverAddress = ('localhost', 5000)
-
-nick = 'Guest'  # User can change this in irc with /nick <NICK>
-key = ''
-client = 'client.io'  # Name of actual FIFO .io
-clientPath = './' + client
-
 
 # Reads in key for server connection
 def read_key():
     with open('config.txt', 'r') as file:
         key = file.read()
     return key
+
+
+# Program initial variables
+serverAddress = ('localhost', 5000)
+nick = 'Guest'  # User can change this in irc with /nick <NICK>
+key = read_key()
+client = 'client.io'  # Name of actual FIFO .io
+clientPath = './' + client
+init_msg = f'NICK {nick}\\nUSER 0 0 0 :{nick}\\nJOIN #welcome {key}'
 
 
 # Removes old pipe
@@ -45,7 +47,9 @@ def rm_old():
 def make_io():
     if rm_old() == 0:   # Remove old client.io
         if os.name == 'posix':   # If running on a linux system
+            print('Creating IO')
             os.mkfifo(clientPath)
+            print('IO success')
         elif os.name == 'nt':  # If running on a windows system
             print('Windows Operating system not supported')
 
@@ -55,13 +59,17 @@ def make_io():
 
 
 # Connects to server with correct naming
-def connect(key):
-    msg = f'NICK {nick}\\nUSER 0 0 0 :{nick}\\nJOIN #welcome {key}'
-    print('Writing to pipe')
-    fifo = open(clientPath, "w")
-    fifo.write(msg)
-    fifo.close()
-    print('success')
+def pipe():
+    while True:
+        print("Opening FIFO...")
+        with open(clientPath) as fifo:
+            print("FIFO opened")
+            while True:
+                data = fifo.read()
+                if len(data) == 0:
+                    print("Writer closed")
+                    break
+                print('Read: "{0}"'.format(data))
 
 
 def foo():
@@ -109,10 +117,15 @@ def foo():
 
 # Main
 def main():
+    msg = ''
+    if len(sys.argv) == 1:
+        print('Creating connection')
+    else:
+        print(len(sys.argv))
     # key = read_key()  # Read key for server
-    make_io()   # Make client io
-    # connect(key)
-    foo()
+    #make_io()   # Make client io
+    pipe()
+    #foo()  # Currently reads and writes to socket TODO
 
 
 # Launch main
