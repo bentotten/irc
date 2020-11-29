@@ -19,12 +19,13 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def check(data, client):
-    data = str(data.decode().lower())
+def check(data, client, connection):
+    data = str(data.decode().strip().lower())
     re.sub(r'[^a-zA-Z0-9]', '', data)
     print(f'Data: {data}')
-    if data == 'disconnect':
-        socket.close()
+    if data == "'disconnect'":
+        print(f'{client} disconnecting')
+        connection.close()
         print(f'{client} has disconnected')
 
 
@@ -61,7 +62,7 @@ def main():
                     data = connection.recv(2048)
                     print('received "%s"' % data)
                     # Check for commands
-                    check(data, clientAddress)
+                    check(data, clientAddress, connection)
                     # Send data to connected clients
                     if data:
                         print('sending data back to the client')
