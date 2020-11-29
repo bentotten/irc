@@ -8,10 +8,9 @@ import os
 from os import path
 import socket
 import threading
+import time
 # import re
 # import ssl
-
-
 
 
 # Program initial variables
@@ -67,6 +66,27 @@ def connection():
     return socket.create_connection(serverAddress)
 
 
+def attempt_reconnect(sock):
+    i = 0
+    connected = False
+    while not connected and i < 10:
+        try:
+            print('Attempting to reconnect...')
+            sock.close()    # Close current socket
+            sock = connection() # Attempt reconnect
+            connected = True
+            print('Reconnected to server')
+
+            return True
+        except socket.error:
+            time.sleep(1)   # Sleep for 1 second if not successful
+            i += 1
+        finally:
+            print('Unable to reconnect')
+            return False
+
+
+
 # Listens for FIFO and sends messages to server from FIFO
 class pipe(threading.Thread):
     # Constructor
@@ -76,27 +96,28 @@ class pipe(threading.Thread):
 
     def run(self):
         global stop
-        while stop:
-            print("Opening FIFO...")
-            try:
+        try:
+            while stop:
+                print("Opening FIFO...")
                 with open(clientPath) as fifo:
                     print("FIFO opened")
-                    while True:
+                    while stop:
                         data = fifo.read()
                         if len(data) == 0:
                             print("Writer closed")
                             break
                         print('Read: "{0}"'.format(data))
                         send(data, self.sock)
-            except socket.error as error:
-                sys.stderr.write(f'Error: {error}i. Exiting...')
-                stop = False
-                self.sock.close()
-                return
-            finally:
-                print('Closing')
-                stop = False
-                return
+        except socket.error as error:
+            sys.stderr.write(f'Error: {error}')
+            stop = False    # Signal other thread to stop
+            self.sock.close()
+            #return 1
+        finally:
+            print(f'Closing Pipe\nStop: {stop}')
+            stop = False
+            print(f'Stop now: {stop}')
+            #return 0
 
 
 # Listens for messages from the server
@@ -109,7 +130,7 @@ class listen(threading.Thread):
     def run(self):
         global stop
         try:
-            while True:
+            while stop:
                 data = self.sock.recv(2048)
                 print(f'Received "{data}"\n')
                 if len(data) == 0:
@@ -118,12 +139,15 @@ class listen(threading.Thread):
         except socket.error as error:
             sys.stderr.write(f'Error: {error}i. Exiting...')
             stop = False
-            return
+            #return 1
 
         finally:
-            print('Closing Listening\n')
+            print(f'Closing Listening\nStop: {stop}')
             stop = False
-            return
+            print(f'Stop now: {stop}')
+            n = threading.active_count()
+            print(f'Threads: {n}')
+            #return 0
 
 
 # Send piped inputs to the server
@@ -138,22 +162,26 @@ def send(msg, sock):
 
 # Main
 def main():
-    key = read_key()
-    init_msg = f'NICK {nick}\\nUSER 0 0 0 :{nick}\\nJOIN #welcome {key}'
+    # key = read_key()
+    # init_msg = f'NICK {nick}\\nUSER 0 0 0 :{nick}\\nJOIN #welcome {key}'
     print(instructions)
 
     make_io()   # Make client io
-    sock = connection() # Connect to server
+    sock = connection()  # Connect to server
 
     # Start threading
     t1 = pipe(sock)
     t2 = listen(sock)
 
     # starting thread 1
-    t1.start()
+    x = t1.start()
     # starting thread 2
     t2.start()
 
+    print(f'{x}')
+
+    n = threading.active_count()
+    print(f'Threads: {n}')
     # wait until thread 1 is completely executed
     print('Joining thread 1')
     t1.join()
