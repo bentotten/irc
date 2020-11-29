@@ -6,7 +6,7 @@ import ssl
 
 # path = "./client.io"
 # fifo = open(path, "r")
-serverAddress = ('34.83.242.37', 6667)
+serverAddress = ('localhost', 5000)
 
 
 def eprint(*args, **kwargs):
@@ -15,7 +15,7 @@ def eprint(*args, **kwargs):
 
 def main():
     # for line in fifo:
-        # print("Received: " + line,)
+    #   print("Received: " + line,)
     # fifo.close()
 
     print('If no cert found, run: ./make_cert.sh")')
@@ -31,8 +31,8 @@ def main():
         # Listen for incomming connections
         sock.listen(1)
         # with context.wrap_socket(sock, server_side=True) as ssock:
-            # print('waiting for a connection')
-            # connection, clientAddress = ssock.accept()
+        #    # print('waiting for a connection')
+        #    # connection, clientAddress = ssock.accept()
         while True:
             print('waiting for a connection')
             connection, clientAddress = sock.accept()
@@ -52,6 +52,9 @@ def main():
                     else:
                         print(f'No more data from {clientAddress}')
                         break
+            except socket.error as error:
+                sys.stderr.write(f'Error: {error}')
+                sys.stderr.write('Client abruptly disconnected')
             finally:
                 # Close connection
                 connection.close()
