@@ -5,7 +5,7 @@
 
 # Use provided code to send messages by typing './m <MESSAGE>'
 # Commands:
-# _stop        : Client exits
+# _stop        : Client disconnects from server and exits
 # _disconnect  : Client signals server to disconnect client
 
 import sys
@@ -170,7 +170,7 @@ def main():
     # starting thread 1
     t1.start()
     # starting thread 2
-    x = t2.start()
+    t2.start()
 
     t1.join(3)
     print('Joined thread 1')
@@ -181,7 +181,6 @@ def main():
     print(t1.is_alive())    # Check if T1 timed out
     print('Is t2 alive?')
     print(t2.is_alive())    # Check if T2 timed out
-
 
     while t1.is_alive() and t2.is_alive():
         t1.join(3)
