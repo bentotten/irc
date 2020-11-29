@@ -76,7 +76,8 @@ def attempt_reconnect(sock):
     for i in range(5):
         try:
             sock = connection()
-            return
+            print('Reconnected to server!')
+            return sock
         except socket.error:
             print('.')
             time.sleep(3)
@@ -181,14 +182,13 @@ def main():
     print('Is t2 alive?')
     print(t2.is_alive())    # Check if T2 timed out
 
-    print(f't2 returned a value: {x}')
 
     while t1.is_alive() and t2.is_alive():
         t1.join(3)
         t2.join(3)
     # If server disconnect, t2 will be dead
     if not t2.is_alive():
-        attempt_reconnect(sock)
+        sock = attempt_reconnect(sock)
 
     # Shutdown connection
     # sock.shutdown(socket.SHUT_WR)
