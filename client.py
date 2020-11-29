@@ -87,26 +87,30 @@ class pipe(threading.Thread):
                     send(data, self.sock)
 
 
-def listen(sock):
-    # package = "SOCKET WORKING"
-    # hostname = serverAddress[0]
-    # port = serverAddress[1]
-    msg = "test test"  # TODO Delete me
-    # sock.sendall(msg.encode())
-    send(msg, sock)
-    try:
-        while True:
-            data = sock.recv(16)
-            print(f'Received "{data}"\n')
-            if len(data) == 0:
-                break
+# Listens for messages from the server
+class listen(threading.Thread):
+    # Constructor
+    def __init__(self, sock):
+        threading.Thread.__init__(self)
+        self.sock = sock
 
-    except socket.error as error:
-        sys.stderr.write(f'Error: {error}')
+    def run(self):
+        # msg = "test test"  # TODO Delete me
+        # sock.sendall(msg.encode())
+        # send(msg, sock)
+        try:
+            while True:
+                data = self.sock.recv(16)
+                print(f'Received "{data}"\n')
+                if len(data) == 0:
+                    break
 
-    finally:
-        print('Closing socket\n')
-        sock.close()
+        except socket.error as error:
+            sys.stderr.write(f'Error: {error}')
+
+        finally:
+            print('Closing socket\n')
+            self.sock.close()
 
     # context = ssl.create_default_context()
     # Connect
@@ -144,18 +148,17 @@ def main():
 
     # Start threading
     t1 = pipe(sock)
-    #t2 = threading.Thread(listen(sock)) # Listen for messages from the server
-    # pipe(sock) # TODO Put back in thread
+    t2 = listen(sock)
 
     # starting thread 1
     t1.start()
     # starting thread 2
-    #t2.start()
+    t2.start()
 
     # wait until thread 1 is completely executed
     t1.join()
     # wait until thread 2 is completely executed
-    #t2.join()
+    t2.join()
 
     # Shutdown connection
     sock.shutdown(socket.SHUT_WR)
