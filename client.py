@@ -8,6 +8,7 @@ import os
 from os import path
 import socket
 import threading
+import time
 # import re
 # import ssl
 
@@ -26,7 +27,7 @@ key = read_key()
 client = 'client.io'  # Name of actual FIFO .io
 clientPath = './' + client
 init_msg = f'NICK {nick}\\nUSER 0 0 0 :{nick}\\nJOIN #welcome {key}'
-
+instructions = 'Welcome to mIRC! To send a message, type "Hello! >> client.io"'
 
 # Removes old pipe
 def rm_old():
@@ -61,39 +62,51 @@ def make_io():
 
 
 # Create a TCP/IP socket
-def connect():
+def connection():
     return socket.create_connection(serverAddress)
 
 
-# Connects to server with correct naming
-def pipe(sock):
-    while True:
-        print("Opening FIFO...")
-        with open(clientPath) as fifo:
-            print("FIFO opened")
-            while True:
-                data = fifo.read()
-                if len(data) == 0:
-                    print("Writer closed")
-                    break
-                print('Read: "{0}"'.format(data))
-                send(data, sock)
+# Listens for FIFO and sends messages to server from FIFO
+class pipe(sock, threading.Thread):
+    # Constructor
+    def __init__(self, i):
+        threading.Thread.__init__(self):
+            threading.Thread.__init__(self)
+            self.i = i
+
+    def run(self):
+        while True:
+            print("Opening FIFO...")
+            with open(clientPath) as fifo:
+                print("FIFO opened")
+                while True:
+                    data = fifo.read()
+                    if len(data) == 0:
+                        print("Writer closed")
+                        break
+                    print('Read: "{0}"'.format(data))
+                    send(data, sock)
 
 
 def listen(sock):
     # package = "SOCKET WORKING"
     # hostname = serverAddress[0]
     # port = serverAddress[1]
-
+    msg = "test test"  # TODO Delete me
+    # sock.sendall(msg.encode())
+    send(msg, sock)
     try:
         while True:
-            data = sock.recv(2048)
-            sys.stderr.write(f'Received "{data}"\n')
+            data = sock.recv(16)
+            print(f'Received "{data}"\n')
+            if len(data) == 0:
+                break
+
     except socket.error as error:
         sys.stderr.write(f'Error: {error}')
 
     finally:
-        sys.stderr.write('Closing socket\n')
+        print('Closing socket\n')
         sock.close()
 
     # context = ssl.create_default_context()
@@ -115,17 +128,25 @@ def listen(sock):
 
 # Send piped inputs to the server
 def send(msg, sock):
-    # Send data
-    sys.stderr.write(f'Sending "{msg}"\n')
-    sock.sendall(msg.encode())
+    try:
+        # Send data
+        sys.stderr.write(f'Sending "{msg}"\n')
+        sock.sendall(msg.encode())
+    finally:
+        print('Closing socket\n')
+        sock.close()
 
 
 # Main
 def main():
+    print(instructions)
     make_io()   # Make client io
-    sock = connect() # Connect to server
-    t1 = threading.Thread(pipe(sock))  # Listen for user writing chat messages
+    sock = connection() # Connect to server
+
+    # Start threading
+
     t2 = threading.Thread(listen(sock)) # Listen for messages from the server
+    # pipe(sock) # TODO Put back in thread
 
     # starting thread 1
     t1.start()
@@ -137,6 +158,8 @@ def main():
     # wait until thread 2 is completely executed
     t2.join()
 
+    # Shutdown connection
+    sock.shutdown(socket.SHUT_WR)
     print("Done")
 
 
