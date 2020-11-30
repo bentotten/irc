@@ -1,3 +1,4 @@
+import copy
 # Saves room and client list
 initialMsg = ':GUEST! {0.0.0.0, 5000} PRIVMSG #: /JOIN #test\n'    # {IP, port}
 msg = "PRIVMSG #cats: Hello World! I'm back!\n"
@@ -8,22 +9,20 @@ message = {'nick': '', 'client': '', 'chan': '', 'cmd': '', 'msg': ''}
 
 class master():
     def __init__(self):
-        # self.room = {'#': {}}  # Adds first channel 0 as #
-        self.room = {'#': {('127.0.0.1', 41704): 'GUEST'}}  # Adds first channel 0 as #
+        self.room = {'#': {}}  # Adds first channel 0 as #
+        # self.room = {'#': {('127.0.0.1', 41704): 'GUEST'}}  # Adds first channel 0 as #
         self.var = '' # Temp storage
 
     # Allows client to join or create a new chan
     def eval(self, data, client):
         print('Join function')
-        self.find_nick(client)
-        print(f'Returned: {self.var}')
-        # msg = self.parse(data, client)  # Chop raw data up into hashable pieces
+        msg = self.parse(data, client)  # Chop raw data up into hashable pieces
 
         # Add user to new room
         # if msg['cmd'].lower() == 'join'
             # self.join(msg)
-        # print(f'\nmsg: {msg}')
-        # print(f'room: {self.room}')
+        print(f'\nmsg: {msg}')
+        print(f'room: {self.room}')
 
     # Credit to Tom de Geus on Stackoverflow
     def recursive_find_nick(self, to_match, d):
@@ -74,9 +73,13 @@ class master():
             string = string[1].split(':', 1)
             message['chan'] = string[0].lstrip(' ')
             # Fill out client and nick
-            catch = self.find_nick(client)
-            if catch is None:
+            self.var = None
+            self.find_nick(client)
+            if self.var is None:
                 self.add_client(client, message['chan'])
+            else:
+                message['client'] = copy.deepcopy(client)
+                message['nick'] = copy.deepcopy(self.var)
 
         # Everyone gets cmd parsed, if it exists
         if string[1].find('/', 1, 2) == 1:
@@ -101,14 +104,20 @@ class master():
         for key in self.room:
             if key is chan:
                 print(f'{chan} exists')
-                return chan
+                return True
         print(f'{chan} does not exist')
-        return None
+        return False
+
+    def create_chan(chan):
+        print('CREATE CHAN HERE')
 
     # Add client to channel
     def add_client(self, client, chan):
-        # catch = find_chan(chan)
-        print(f'Adding {client} to {chan}')
+        if self.find_chan(chan):
+            print(f'Found {chan}')
+            print(f'Adding {client} to {chan}')
+        else:
+            self.create_chan(chan)
 
 
 def main():

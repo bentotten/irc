@@ -12,6 +12,7 @@ import socket
 import ssl
 import re
 import threading
+import copy
 # import subprocess
 
 
