@@ -3,7 +3,7 @@ import copy
 initialMsg = ':GUEST! {0.0.0.0, 5000} PRIVMSG #: /JOIN #test\n'    # {IP, port}
 msg = "PRIVMSG #cats: Hello World! I'm back!\n"
 connection = "<socket.socket fd=5, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5000), raddr=('127.0.0.1', 41704)>"
-client = ('127.0.0.1', 41704)
+client = "('127.0.0.1', 41704)"
 message = {'nick': '', 'client': '', 'chan': '', 'cmd': '', 'msg': ''}
 
 
@@ -15,7 +15,7 @@ class master():
 
     # Allows client to join or create a new chan
     def eval(self, data, client):
-        print('Join function')
+        print('Evaluating data')
         msg = self.parse(data, client)  # Chop raw data up into hashable pieces
 
         # Add user to new room
@@ -76,10 +76,11 @@ class master():
             self.var = None
             self.find_nick(client)
             if self.var is None:
-                self.add_client(client, message['chan'])
-            else:
-                message['client'] = copy.deepcopy(client)
-                message['nick'] = copy.deepcopy(self.var)
+                self.add_client(client, message['chan'], message['nick'])
+                self.var = None
+                self.find_nick(client)
+            message['client'] = copy.deepcopy(client)
+            message['nick'] = copy.deepcopy(self.var)
 
         # Everyone gets cmd parsed, if it exists
         if string[1].find('/', 1, 2) == 1:
@@ -108,16 +109,25 @@ class master():
         print(f'{chan} does not exist')
         return False
 
-    def create_chan(chan):
-        print('CREATE CHAN HERE')
+    def create_chan(self, chan, client):
+        # chan_copy = copy.deepcopy(chan)
+        self.room[chan] = {}
 
     # Add client to channel
-    def add_client(self, client, chan):
-        if self.find_chan(chan):
-            print(f'Found {chan}')
-            print(f'Adding {client} to {chan}')
+    def add_client(self, client, chan, nick):
+        # If no room, create it
+        if not self.find_chan(chan):
+            print('Creating new channel')
+            self.create_chan(chan, client)
+
+        nick_fetch = self.find_nick(client)
+        if nick_fetch is None:
+            if nick == '':
+                nick = 'Guest'
+            self.room[chan][client] = nick
         else:
-            self.create_chan(chan)
+            self.room[chan][client] = nick_fetch
+        print(f'{nick} joined {chan}')
 
 
 def main():
