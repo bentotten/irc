@@ -44,21 +44,21 @@ class master():
         if msg['cmd']:
             print(f'Processing Command: {msg["cmd"]}')
             if msg['cmd'].lower() == '/join':
-                self.add_client(msg['client'], msg['chan'], msg['nick'])
+                self.add_client(msg['client'], msg['msg'], msg['nick'])
             elif msg['cmd'].lower() == '/part':
                 self.rm_client(msg['/client'], msg['chan'], msg['nick'])
             elif msg['cmd'].lower() == '/list' and msg['msg'] == '':
                 return self.list(False)
             elif msg['cmd'].lower() == '/list' and msg['msg'] != '':
-                return self.list(msg['msg'], False)
+                return self.list_clients(msg['msg'], False)
             else:
                 print('Sending...')
-                #self.send(msg, sock)
+                # self.send(msg, sock)
 
         print(f'Rooms: {self.room}\n')
 
     def send(self, msg, sock):
-        #for client in self.room[msg['chan']]:
+        # for client in self.room[msg['chan']]:
         print(f"Sending to {msg['client']}")
         sock.sendto(msg['msg'].encode(), msg['client'])
 
@@ -103,7 +103,6 @@ class master():
             message['chan'] = copy.deepcopy(string[0].lstrip(' '))
             # Add client to initial channel
             self.add_client(client, message['chan'], message['nick'])
-
 
         # Else strip PRIVMSG off of front. Needs double for chan to get in []
         else:
@@ -163,7 +162,7 @@ class master():
             self.create_chan(chan, client)
 
         # Check if already in room
-        array = self.list(chan, True)
+        array = self.list_client(chan, True)
         if client in array:
             print('Client already in channel')
         else:
@@ -193,17 +192,17 @@ class master():
         rlist = []
         for key in self.room.keys():
             rlist.append(key)
-        if silent == False:
+        if silent is False:
             print(f'\nLIST: All channels: {rlist}')
         return rlist
 
     # Returns a channels members
-    def list(self, chan, silent):
+    def list_client(self, chan, silent):
         if self.find_chan(chan):
             rlist = []
             for key in self.room[chan]:
                 rlist.append(self.room[chan][key])
-            if silent == False:
+            if silent is False:
                 print(f'\nLIST: All clients in {chan}: {rlist}')
             return rlist
         else:
@@ -253,6 +252,7 @@ def disconnect(client, connection):
     print(f'{client} disconnecting')
     connection.close()
 
+
 def check(raw, client, connection):
     data = raw.decode()
     print(f'Checking data: {data}')
@@ -271,6 +271,7 @@ def check(raw, client, connection):
             return data
     else:
         return data
+
 
 class pipe(threading.Thread):
     def __init__(self):
@@ -379,10 +380,8 @@ def main():
                 # Start new thread for new connections
                 clients.append(connect(connection, clientAddress, irc, sock))
                 threadcount += 1
-                #clients[threadcount] = connect(connection, clientAddress, irc)
                 clients[-1].setDaemon(True)
                 clients[-1].start()
-                #clients.append(copy.deepcopy(x))
 
     except socket.error as error:
         sys.stderr.write(f'ERROR: {error}\n')
