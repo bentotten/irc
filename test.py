@@ -1,9 +1,8 @@
 import copy
 # Saves room and client list
-initialMsg = ':JACK! {0.0.0.0, 5000} PRIVMSG #cats: /JOIN #test\n'    # {IP, port}
+initialMsg = ':JACK! {0.0.0.0, 5000} PRIVMSG #cats: /JOIN #test\n'  # {IP,port}
 msg = "PRIVMSG #cats: Hello World! I'm back!\n"
 qmsg = "PRIVMSG #cats: /part #cats"
-connection = "<socket.socket fd=5, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5000), raddr=('127.0.0.1', 41704)>"
 client = "('127.0.0.1', 41704)"
 message = {'nick': '', 'client': '', 'chan': '', 'cmd': '', 'msg': ''}
 
@@ -11,8 +10,7 @@ message = {'nick': '', 'client': '', 'chan': '', 'cmd': '', 'msg': ''}
 class master():
     def __init__(self):
         self.room = {'#': {}}  # Adds first channel 0 as #
-        # self.room = {'#': {('127.0.0.1', 41704): 'GUEST'}}  # Adds first channel 0 as #
-        self.var = '' # Temp storage
+        self.var = ''  # Temp storage
 
     # Allows client to join or create a new chan
     def eval(self, data, client):
@@ -30,7 +28,6 @@ class master():
                 return self.list()
             elif msg['cmd'].lower() == 'list' and msg['msg'] != '':
                 return self.list(msg['msg'])
-
 
         print(f'\nmsg: {msg}')
         print(f'room: {self.room}')
@@ -67,13 +64,13 @@ class master():
             print('\nChecking prefix...')   # Need to check/add user
             # Parse NICK
             string = data.split('!', 1)
-            message['nick'] = string[0].lstrip(':')
+            message['nick'] = copy.deepcopy(string[0].lstrip(':'))
             # Parse real Client IP address
             string = string[1].split('PRIVMSG', 1)
-            message['client'] = string[0]
+            message['client'] = copy.deepcopy(string[0])
             # Parse Channel
             string = string[1].split(':', 1)
-            message['chan'] = string[0].lstrip(' ')
+            message['chan'] = copy.deepcopy(string[0].lstrip(' '))
 
         # Else strip PRIVMSG off of front. Needs double for chan to get in []
         else:
@@ -82,7 +79,7 @@ class master():
             string = data.split('PRIVMSG', 1)
             # Parse Channel
             string = string[1].split(':', 1)
-            message['chan'] = string[0].lstrip(' ')
+            message['chan'] = copy.deepcopy(string[0].lstrip(' '))
             # Fill out client and nick
             self.var = None
             self.find_nick(client)
@@ -97,11 +94,10 @@ class master():
         if string[1].find('/', 1, 2) == 1:
             temp = string[1].lstrip(' /')
             string = temp.split(' ')
-            message['cmd'] = string[0].lstrip('/')
-            message['msg'] = string[1].rstrip('\n')
+            message['cmd'] = copy.deepcopy(string[0].lstrip('/'))
+            message['msg'] = copy.deepcopy(string[1].rstrip('\n'))
         else:
-            message['msg'] = string[1].rstrip('\n')
-
+            message['msg'] = copy.deepcopy(string[1].rstrip('\n'))
         return message
 
     # Find nick using client
@@ -121,7 +117,6 @@ class master():
         return False
 
     def create_chan(self, chan, client):
-        # chan_copy = copy.deepcopy(chan)
         self.room[chan] = {}
 
     # Add client to channel
@@ -165,7 +160,7 @@ class master():
                 rlist.append(self.room[chan][key])
             return rlist
         else:
-            print(f'Error: Invalid channel')
+            print('Error: Invalid channel')
             return None
 
 
@@ -173,7 +168,7 @@ def main():
     channels = master()
     channels.eval(initialMsg, client)
     channels.eval(msg, client)
-    #channels.eval(qmsg, client)
+    channels.eval(qmsg, client)
     print(channels.list('#cats'))
 
 
