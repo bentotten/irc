@@ -35,9 +35,10 @@ class master():
         self.var = ''  # Temp storage
 
     # Allows client to join or create a new chan
-    def eval(self, data, client):
+    def eval(self, data, client, sock):
         print('Processing in irc ...')
         msg = self.parse(data, client)  # Chop raw data up into hashable pieces
+        print(f'\nMessage received: {msg}')
 
         # Add user to new room
         if msg['cmd']:
@@ -50,9 +51,14 @@ class master():
                 return self.list()
             elif msg['cmd'].lower() == '/list' and msg['msg'] != '':
                 return self.list(msg['msg'])
+            else:
+                self.send(msg, sock)
 
-        print(f'\nmsg: {msg}')
-        print(f'room: {self.room}\n')
+        print(f'Rooms: {self.room}\n')
+
+    def send(self, msg, sock):
+        for client in self.room[msg['chan']]:
+            sock.sendto(msg['msg'], client)
 
     # Credit to Tom de Geus on Stackoverflow
     def recursive_find_nick(self, to_match, d):
@@ -92,7 +98,11 @@ class master():
             message['client'] = copy.deepcopy(string[0])
             # Parse Channel
             string = string[1].split(':', 1)
-            message['chan'] = copy.deepcopy(string[0].lstrip(' '))
+            print(f'String[0]: {string[0]}')
+            if string[0] == ' #':
+                message['chan'] = copy.deepcopy(string[0].lstrip(' '))
+            else:
+                message['chan'] = '#' + string[0].lstrip(' ')
 
         # Else strip PRIVMSG off of front. Needs double for chan to get in []
         else:
@@ -101,7 +111,11 @@ class master():
             string = data.split('PRIVMSG', 1)
             # Parse Channel
             string = string[1].split(':', 1)
-            message['chan'] = copy.deepcopy(string[0].lstrip(' '))
+            print(f'String[0]:{string[0]}')
+            if string[0] == ' #':
+                message['chan'] = copy.deepcopy(string[0].lstrip(' '))
+            else:
+                message['chan'] = '#' + string[0].lstrip(' ')
             # Fill out client and nick
             self.var = None
             self.find_nick(client)
@@ -255,7 +269,6 @@ def check(raw, client, connection):
     else:
         return data
 
-# Listens for FIFO and sends messages to server from FIFO
 class pipe(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
@@ -287,17 +300,19 @@ class pipe(threading.Thread):
 
 class connect(threading.Thread):
     # Constructor
-    def __init__(self, connection, clientAddress, irc):
+    def __init__(self, connection, clientAddress, irc, sock):
         threading.Thread.__init__(self)
         self.connection = connection
         self.clientAddress = clientAddress
         self.irc = irc
+        self.sock = sock
         self.stop = True
 
     def run(self):
         connection = self.connection
         clientAddress = self.clientAddress
         irc = self.irc
+        sock = self.sock
         try:
             print(f'Connection from {clientAddress}')
             # Get data in chunks
@@ -309,7 +324,7 @@ class connect(threading.Thread):
                 # Send data to connected clients
                 if data:
                     print('Evaluating data')
-                    irc.eval(data, clientAddress)
+                    irc.eval(data, clientAddress, sock)
                     # connection.sendall(data)
                 else:
                     print(f'No more data from {clientAddress}')
@@ -359,7 +374,7 @@ def main():
                 connection, clientAddress = sock.accept()
 
                 # Start new thread for new connections
-                clients.append(connect(connection, clientAddress, irc))
+                clients.append(connect(connection, clientAddress, irc, sock))
                 threadcount += 1
                 #clients[threadcount] = connect(connection, clientAddress, irc)
                 clients[-1].setDaemon(True)

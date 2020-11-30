@@ -70,13 +70,13 @@ def make_io():
 # Registration message example
 # :JACK! <IP>, <PORT> PRIVMSG #: /JOIN #\n'
 def connection():
-    sock = socket.create_connection(serverAddress)
-    # Send registration message to server to get added to client list
-    # Port and IP will be filled in on the server side
-    text = ':' + nick + '! ip_, port_ PRIVMSG #: /JOIN #\n'
-    print(text)
-    sock.sendall(text.encode())
-    return sock
+        sock = socket.create_connection(serverAddress)
+        # Send registration message to server to get added to client list
+        # Port and IP will be filled in on the server side
+        text = ':' + nick + '! ip_, port_ PRIVMSG #: /JOIN #\n'
+        print(text)
+        sock.sendall(text.encode())
+        return sock
 
 def attempt_reconnect(sock):
     print('Attemping reconnect:')
@@ -219,7 +219,8 @@ def main():
     # Shutdown connection
     # sock.shutdown(socket.SHUT_WR)
     print('Closing socket connection')
-    sock.close()
+    if sock != None:
+        sock.close()
     print("Thank you for using b-IRC!\nExiting")
 
 
