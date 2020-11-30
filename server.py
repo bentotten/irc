@@ -233,9 +233,8 @@ def check(data, client, connection):
     data = data.decode()
     if 'ip_, port_' in data:
         print('Initial connection message')
-        print(f'old: {data}')
         data = data.replace('ip_, port_', str(client), 1)
-        print(f'new: {data}')
+        return data
     else:
         data = data.strip().lower()
         data = re.sub(r'\W+', '', data)
@@ -309,11 +308,11 @@ def main():
                         data = connection.recv(512)  # Message size limit: 512b
                         print('received "%s"' % data)
                         # Check for commands from client
-                        check(data, clientAddress, connection)
+                        data = check(data, clientAddress, connection)
                         # Send data to connected clients
                         if data:
                             print('Evaluating data')
-                            #irc.eval(data, clientAddress)
+                            irc.eval(data, clientAddress)
                             # connection.sendall(data)
                         else:
                             print(f'No more data from {clientAddress}')
@@ -326,7 +325,7 @@ def main():
                     print('Closing connection')
                     connection.close()
     except socket.error as error:
-        sys.stderr.write(f'ERROR: {error}')
+        sys.stderr.write(f'ERROR: {error}\n')
         sock.close()
 
 
