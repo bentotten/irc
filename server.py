@@ -36,19 +36,19 @@ class master():
 
     # Allows client to join or create a new chan
     def eval(self, data, client):
-        print('Evaluating data')
+        print('Processing in irc ...')
         msg = self.parse(data, client)  # Chop raw data up into hashable pieces
 
         # Add user to new room
         if msg['cmd']:
             print(f'Processing Command: {msg["cmd"]}')
-            if msg['cmd'].lower() == 'join':
+            if msg['cmd'].lower() == '/join':
                 self.add_client(msg['client'], msg['chan'], msg['nick'])
-            elif msg['cmd'].lower() == 'part':
-                self.rm_client(msg['client'], msg['chan'], msg['nick'])
-            elif msg['cmd'].lower() == 'list' and msg['msg'] == '':
+            elif msg['cmd'].lower() == '/part':
+                self.rm_client(msg['/client'], msg['chan'], msg['nick'])
+            elif msg['cmd'].lower() == '/list' and msg['msg'] == '':
                 return self.list()
-            elif msg['cmd'].lower() == 'list' and msg['msg'] != '':
+            elif msg['cmd'].lower() == '/list' and msg['msg'] != '':
                 return self.list(msg['msg'])
 
         print(f'\nmsg: {msg}')
@@ -285,30 +285,43 @@ class pipe(threading.Thread):
             print('Closing Server Pipe')
 
 
-def connect(connection, clientAddress, irc):
-    try:
-        print(f'Connection from {clientAddress}')
-        # Get data in chunks
-        while True:
-            data = connection.recv(512)  # Message size limit: 512b
-            print('received "%s"' % data)
-            # Check for commands from client
-            data = check(data, clientAddress, connection)
-            # Send data to connected clients
-            if data:
-                print('Evaluating data')
-                irc.eval(data, clientAddress)
-                # connection.sendall(data)
-            else:
-                print(f'No more data from {clientAddress}')
-                break
-    except socket.error as error:
-        sys.stderr.write(f'Error: {error}')
-        sys.stderr.write('Client abruptly disconnected')
-    finally:
-        # Close connection
-        print('Closing connection')
-        connection.close()
+class connect(threading.Thread):
+    # Constructor
+    def __init__(self, connection, clientAddress, irc):
+        threading.Thread.__init__(self)
+        self.connection = connection
+        self.clientAddress = clientAddress
+        self.irc = irc
+        self.stop = True
+
+    def run(self):
+        connection = self.connection
+        clientAddress = self.clientAddress
+        irc = self.irc
+        try:
+            print(f'Connection from {clientAddress}')
+            # Get data in chunks
+            while self.stop:
+                data = connection.recv(512)  # Message size limit: 512b
+                print('received "%s"' % data)
+                # Check for commands from client
+                data = check(data, clientAddress, connection)
+                # Send data to connected clients
+                if data:
+                    print('Evaluating data')
+                    irc.eval(data, clientAddress)
+                    # connection.sendall(data)
+                else:
+                    print(f'No more data from {clientAddress}')
+                    break
+        except socket.error as error:
+            sys.stderr.write(f'Error: {error}')
+            sys.stderr.write('Client abruptly disconnected')
+            self.stop = False
+        finally:
+            # Close connection
+            print('Closing connection')
+            connection.close()
 
 
 def main():
@@ -341,13 +354,17 @@ def main():
 
             # Format new incoming client connections as new threads
             while t1.is_alive():
+                # Handle new connection
                 print('waiting for a connection')
                 connection, clientAddress = sock.accept()
+
                 # Start new thread for new connections
-                x = threading.Thread(connect(connection, clientAddress, irc))
+                clients.append(connect(connection, clientAddress, irc))
                 threadcount += 1
-                x.setDaemon(True)
-                clients.append(copy.deepcopy(x))
+                #clients[threadcount] = connect(connection, clientAddress, irc)
+                clients[-1].setDaemon(True)
+                clients[-1].start()
+                #clients.append(copy.deepcopy(x))
 
     except socket.error as error:
         sys.stderr.write(f'ERROR: {error}\n')
