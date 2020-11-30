@@ -285,16 +285,50 @@ class pipe(threading.Thread):
             print('Closing Server Pipe')
 
 
+def connect(connection, clientAddress, irc):
+    try:
+        print(f'Connection from {clientAddress}')
+        # Get data in chunks
+        while True:
+            data = connection.recv(512)  # Message size limit: 512b
+            print('received "%s"' % data)
+            # Check for commands from client
+            data = check(data, clientAddress, connection)
+            # Send data to connected clients
+            if data:
+                print('Evaluating data')
+                irc.eval(data, clientAddress)
+                # connection.sendall(data)
+            else:
+                print(f'No more data from {clientAddress}')
+                break
+    except socket.error as error:
+        sys.stderr.write(f'Error: {error}')
+        sys.stderr.write('Client abruptly disconnected')
+    finally:
+        # Close connection
+        print('Closing connection')
+        connection.close()
+
+
 def main():
+    # Make data structure to hold all clients and rooms
+    clients = []
+    threadcount = 0
     irc = master()
     make_io()   # Setups up pipe
+    # Spin up FIFO listener
     t1 = pipe()
     t1.setDaemon(True)  # Set to non-blocking thread
     t1.start()
 
-    print('If no cert found, run: ./make_cert.sh")')
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain(certfile="certificate.crt", keyfile="certificate.key")
+    # Load SSL cert
+    try:
+        print('Loading SSL certificate')
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile="certificate.crt", keyfile="certificate.key")
+    except OSError:
+        sys.stderr.write('If no cert found, run: ./make_cert.sh")')
 
     # Create TCP/IP scoket
     try:
@@ -302,40 +336,19 @@ def main():
             # Bind to port
             print('starting up on %s port %s' % serverAddress)
             sock.bind(serverAddress)
-
             # Listen for incomming connections
-            sock.listen(1)
+            sock.listen(5)
+
+            # Format new incoming client connections as new threads
             while t1.is_alive():
                 print('waiting for a connection')
                 connection, clientAddress = sock.accept()
-                print(connection)
-                print(clientAddress)
+                # Start new thread for new connections
+                x = threading.Thread(connect(connection, clientAddress, irc))
+                threadcount += 1
+                x.setDaemon(True)
+                clients.append(copy.deepcopy(x))
 
-                # On connection
-                try:
-                    print(f'Connection from {clientAddress}')
-
-                    # Get data in chunks and retransmit it
-                    while t1.is_alive():
-                        data = connection.recv(512)  # Message size limit: 512b
-                        print('received "%s"' % data)
-                        # Check for commands from client
-                        data = check(data, clientAddress, connection)
-                        # Send data to connected clients
-                        if data:
-                            print('Evaluating data')
-                            irc.eval(data, clientAddress)
-                            # connection.sendall(data)
-                        else:
-                            print(f'No more data from {clientAddress}')
-                            break
-                except socket.error as error:
-                    sys.stderr.write(f'Error: {error}')
-                    sys.stderr.write('Client abruptly disconnected')
-                finally:
-                    # Close connection
-                    print('Closing connection')
-                    connection.close()
     except socket.error as error:
         sys.stderr.write(f'ERROR: {error}\n')
         sock.close()
