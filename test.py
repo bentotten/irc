@@ -1,9 +1,9 @@
 # Saves room and client list
-initialMsg = ':NICK! 0 0 0 PRIVMSG #: JOIN\n'
+initialMsg = ':GUEST! 0.0.0.0 PRIVMSG #: /JOIN #test\n'
 msg = "PRIVMSG #cats: Hello World! I'm back!\n"
 connection = "<socket.socket fd=5, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5000), raddr=('127.0.0.1', 41704)>"
 client = "('127.0.0.1', 41704)"
-msgFormat = {'nick':'','client':'','key':'','chan':'','cmd':'','msg':''}
+msgFormat = {'nick': '', 'client': '', 'chan': '', 'cmd': '', 'msg': ''}
 
 
 class master():
@@ -17,16 +17,49 @@ class master():
         print(f'room: {self.room}')
 
     def parse(self, data):
-        message = {'nick':'','client':'','key':'','chan':'','cmd':'','msg':''}
+        message = {'nick': '', 'client': '', 'chan': '', 'cmd': '', 'msg': ''}
         print(message)
 
-        # Pull prefix, if exists
-        if data[0] is ':':
-            print('I have a prefix!')   # Need to check/add user
+        # Pull prefix, if exists. This will mean prefix should be used to save
+        # user data instead of client address; it implies the message was
+        # forwarded by another server
+        if data[0] == ':':
+            print('\nChecking prefix...')   # Need to check/add user
+            # Parse NICK
             string = data.split('!', 1)
+            message['nick'] = string[0].lstrip(':')
+            # Parse real Client IP address
+            string = string[1].split('PRIVMSG', 1)
+            message['client'] = string[0]
+            # Parse Channel
+            string = string[1].split(':', 1)
+            message['chan'] = string[0].lstrip(' ')
+
+        # Else strip PRIVMSG off of front. Needs double for chan to get in []
+        else:
+            print('Parsing message...')
+            string = data.split('PRIVMSG',1)
+            # Parse Channel
+            string = string[1].split(':', 1)
+            message['chan'] = string[0].lstrip(' ')
+
+        # Everyone gets cmd parsed, if it exists
+        print(f'String[1]: {string[1]}')
+        if string[1].find('/', 1, 2) == 1:
+            temp = string[1].lstrip(' /')
+            string = temp.split(' ')
+            message['cmd'] = string[0].lstrip('/')
+            message['msg'] = string[1].rstrip('\n')
             print(f'Split 1: {string[0]}')
             print(f'Split 2: {string[1]}')
-            print(f'Full string: {string}')
+        else:
+            message['msg'] = string[0].rstrip('\n')
+            #print(f'Split 1: {string[0]}')
+
+        print(f'Full string at end: {string}')
+        print(f'Message so far: {message}')
+
+        # TODO CHECK TABLE FOR CLIENT IP ADDRESS AND ADD NICK TO MSG
 
 
 def main():
