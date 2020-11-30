@@ -52,25 +52,25 @@ class master():
                 return self.list(False)
             elif msg['cmd'].lower() == '/list' and msg['msg'] != '':
                 return self.list_clients(msg['msg'], False)
-            else:
-                print('Sending...')
-                self.send(msg, connection)
+        else:
+            print('Sending...')
+            self.send(msg, connection)
 
         print(f'Rooms: {self.room}\n')
 
     def send(self, msg, connection):
         print(f"Sending to {msg['client']}")
 
-        # Put client back in tuple form
-        result = msg['client'].split(',')
-        result[0] = result[0].lstrip(" ('")
-        result[0] = result[0].rstrip("'")
-        result[1] = int(result[1].rstrip(') '))
-        cl = tuple(result)
-
         # Send message
-        # for client in self.room[msg['chan']]:
-        connection.sendto(msg['msg'].encode(), cl)
+        for client in self.room[msg['chan']]:
+            # Put client back in tuple form
+            #result = client.split(',')
+            #result[0] = result[0].lstrip(" ('")
+            #result[0] = result[0].rstrip("'")
+            #result[1] = int(result[1].rstrip(') '))
+            #cl = tuple(result)
+
+            connection.sendto(msg['msg'].encode(), client)
         return
 
     # Credit to Tom de Geus on Stackoverflow
