@@ -1,6 +1,6 @@
 import copy
 # Saves room and client list
-initialMsg = ':GUEST! {0.0.0.0, 5000} PRIVMSG #: /JOIN #test\n'    # {IP, port}
+initialMsg = ':JACK! {0.0.0.0, 5000} PRIVMSG #cats: /JOIN #test\n'    # {IP, port}
 msg = "PRIVMSG #cats: Hello World! I'm back!\n"
 qmsg = "PRIVMSG #cats: /part #cats"
 connection = "<socket.socket fd=5, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5000), raddr=('127.0.0.1', 41704)>"
@@ -26,6 +26,10 @@ class master():
                 self.add_client(msg['client'], msg['chan'], msg['nick'])
             elif msg['cmd'].lower() == 'part':
                 self.rm_client(msg['client'], msg['chan'], msg['nick'])
+            elif msg['cmd'].lower() == 'list' and msg['msg'] == '':
+                return self.list()
+            elif msg['cmd'].lower() == 'list' and msg['msg'] != '':
+                return self.list(msg['msg'])
 
 
         print(f'\nmsg: {msg}')
@@ -146,11 +150,31 @@ class master():
         else:
             print(f'Unable to find {chan}')
 
+    # Returns all channels
+    def list(self):
+        rlist = []
+        for key in self.room.keys():
+            rlist.append(key)
+        return rlist
+
+    # Returns a channels members
+    def list(self, chan):
+        if self.find_chan(chan):
+            rlist = []
+            for key in self.room[chan]:
+                rlist.append(self.room[chan][key])
+            return rlist
+        else:
+            print(f'Error: Invalid channel')
+            return None
+
+
 def main():
     channels = master()
-    # channels.eval(initialMsg, client)
+    channels.eval(initialMsg, client)
     channels.eval(msg, client)
-    channels.eval(qmsg, client)
+    #channels.eval(qmsg, client)
+    print(channels.list('#cats'))
 
 
 if __name__ == '__main__':
