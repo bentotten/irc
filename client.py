@@ -74,13 +74,12 @@ def connection():
         # Send registration message to server to get added to client list
         # Port and IP will be filled in on the server side
         text = ':' + nick + '! ip_, port_ PRIVMSG #: /JOIN #\n'
-        print(text)
+        print(f'Sending join request {text}')
         sock.sendall(text.encode())
         return sock
 
 def attempt_reconnect(sock):
     print('Attemping reconnect:')
-    sock.close()
     for i in range(5):
         try:
             sock = connection()
@@ -162,7 +161,7 @@ class listen(threading.Thread):
                 print(f'Received "{data}"\n')
                 if len(data) == 0:      # If server disconnect
                     print('Server abrupt disconnect.')
-                    return 1
+                    break
 
         except socket.error as error:
             sys.stderr.write(f'Error: {error}')

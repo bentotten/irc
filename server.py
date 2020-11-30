@@ -35,7 +35,7 @@ class master():
         self.var = ''  # Temp storage
 
     # Allows client to join or create a new chan
-    def eval(self, data, client, sock):
+    def eval(self, data, client, sock, connection):
         print('Processing in irc ...')
         msg = self.parse(data, client)  # Chop raw data up into hashable pieces
         print(f'\nMessage received: {msg}')
@@ -46,22 +46,32 @@ class master():
             if msg['cmd'].lower() == "'/join":
                 print('Joining...')
                 self.add_client(msg['client'], msg['msg'], msg['nick'])
-            elif msg['cmd'].lower() == '/part':
+            elif msg['cmd'].lower() == "'/part'":
                 self.rm_client(msg['/client'], msg['chan'], msg['nick'])
-            elif msg['cmd'].lower() == '/list' and msg['msg'] == '':
+            elif msg['cmd'].lower() == "'/list'" and msg['msg'] == '':
                 return self.list(False)
             elif msg['cmd'].lower() == '/list' and msg['msg'] != '':
                 return self.list_clients(msg['msg'], False)
             else:
                 print('Sending...')
-                # self.send(msg, sock)
+                self.send(msg, connection)
 
         print(f'Rooms: {self.room}\n')
 
-    def send(self, msg, sock):
-        # for client in self.room[msg['chan']]:
+    def send(self, msg, connection):
         print(f"Sending to {msg['client']}")
-        sock.sendto(msg['msg'].encode(), msg['client'])
+
+        # Put client back in tuple form
+        result = msg['client'].split(',')
+        result[0] = result[0].lstrip(" ('")
+        result[0] = result[0].rstrip("'")
+        result[1] = int(result[1].rstrip(') '))
+        cl = tuple(result)
+
+        # Send message
+        # for client in self.room[msg['chan']]:
+        connection.sendto(msg['msg'].encode(), cl)
+        return
 
     # Credit to Tom de Geus on Stackoverflow
     def recursive_find_nick(self, to_match, d):
@@ -318,10 +328,11 @@ class connect(threading.Thread):
         clientAddress = self.clientAddress
         irc = self.irc
         sock = self.sock
-        try:
+        #try:
+        if 1 == 1:
             print(f'Connection from {clientAddress}')
             # Get data in chunks
-            while self.stop:
+            while True:
                 data = connection.recv(512)  # Message size limit: 512b
                 print('received "%s"' % data)
                 # Check for commands from client
@@ -329,19 +340,19 @@ class connect(threading.Thread):
                 # Send data to connected clients
                 if data:
                     print('Evaluating data')
-                    irc.eval(data, clientAddress, sock)
-                    # connection.sendall(data)
+                    irc.eval(data, clientAddress, sock, connection)
+                    #connection.sendall(data)
                 else:
                     print(f'No more data from {clientAddress}')
                     break
-        except socket.error as error:
-            sys.stderr.write(f'Error: {error}')
-            sys.stderr.write('Client abruptly disconnected')
-            self.stop = False
-        finally:
+        #except socket.error as error:
+            #sys.stderr.write(f'Error: {error}')
+            #sys.stderr.write('Client abruptly disconnected')
+            #self.stop = False
+        #finally:
             # Close connection
-            print('Closing connection')
-            connection.close()
+            #print('Closing connection')
+            #connection.close()
 
 
 def main():
