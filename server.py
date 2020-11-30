@@ -152,7 +152,12 @@ class master():
         if nick_fetch is None:
             if nick == '':
                 nick = 'Guest'
-            self.room[chan][client] = nick
+            # Check if already in room
+            array = self.list(chan)
+            if client in array:
+                print('Client already in channel')
+            else:
+                self.room[chan][client] = nick
         else:
             self.room[chan][client] = nick_fetch
         print(f'{nick} joined {chan}')
@@ -228,9 +233,11 @@ def disconnect(client, connection):
     print(f'{client} disconnecting')
     connection.close()
 
-def check(data, client, connection):
-    print('Checking data')
-    data = data.decode()
+def check(raw, client, connection):
+    print(f'Checking raw: {raw}')
+    data = raw.decode()
+    print(f'Checking data: {data}')
+
     if 'ip_, port_' in data:
         print('Initial connection message')
         data = data.replace('ip_, port_', str(client), 1)

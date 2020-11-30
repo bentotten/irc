@@ -15,7 +15,7 @@ import socket
 import threading
 import time
 import re
-# import ssl
+import copy
 
 
 # Program initial variables
@@ -23,7 +23,7 @@ serverAddress = ('Localhost', 5000)
 nick = 'BEN'  # User can change this in irc with /nick <NICK>
 client = 'client.io'  # Name of actual FIFO .io
 clientPath = './' + client
-instructions = 'Welcome to b-IRC! To send a message, type "./m Hello!"'
+instructions = 'Welcome to b-IRC! To send a message, type "./m Hello!" \nDefault channel is "#", to change, type _chan <channel>  NOTE: DO NOT INCLUDE #'
 msg = {'nick': '', 'client': '', 'chan': '', 'cmd': '', 'msg': ''}
 
 
@@ -68,9 +68,10 @@ def make_io():
 
 # Create a TCP/IP socket and send registration message
 # Registration message example
-# :JACK! {<IP>, <PORT>} PRIVMSG #: /JOIN #test\n'  # {IP,port}
+# :JACK! <IP>, <PORT> PRIVMSG #: /JOIN #\n'
 def connection():
     sock = socket.create_connection(serverAddress)
+    # Send registration message to server to get added to client list
     # Port and IP will be filled in on the server side
     text = ':' + nick + '! ip_, port_ PRIVMSG #: /JOIN #\n'
     print(text)
@@ -98,6 +99,7 @@ class pipe(threading.Thread):
         threading.Thread.__init__(self)
         self.sock = sock
         self.stop = True
+        self.chan = '#'
 
     def run(self):
         try:
@@ -108,20 +110,42 @@ class pipe(threading.Thread):
                     while True:
                         data = fifo.read()
                         check = re.sub(r'\W+', '', data)
-                        if '_stop' == check:    # If user is closing client
+                        # Check if user is commanding close
+                        if '_stop' == check:
                             print('Stop command. Stopping client')
                             self.stop = False
                             break
+                        elif '_chan' in check:
+                            print('Changing Channel')
+                            print(check)
+                            new_chan = check.split('_chan')
+                            print(f'Removed: {new_chan[0]}')
+                            print(f'Channel changed to {new_chan[1]}')
+                            self.chan = copy.deepcopy(new_chan[1].strip(' '))
+                        # Check if pipe has disconnected
                         elif len(data) == 0:
-                            print("Writer closed")
+                            print("Pipe closed")
                             break
                         else:
                             print('Read: "{0}"'.format(data))
-                            send(data, self.sock)
+                            text = self.form(data)
+                            send(text, self.sock)
         except socket.error as error:
             sys.stderr.write(f'Error: {error}')
         finally:
             print('Closing Pipe')
+
+    # Format message
+    # Example
+    # PRIVMSG #cats: Hello World! I'm back!\n
+    def form(self, data):
+        if self.chan == '#':
+            text = 'PRIVMSG ' + self.chan + ': ' + data
+
+        else:
+            text = 'PRIVMSG #' + self.chan + ': ' + data
+            print(text)
+        return text
 
 
 # Listens for messages from the server
@@ -154,13 +178,11 @@ class listen(threading.Thread):
 # "PRIVMSG #cats: Hello World! I'm back!\n"
 def send(text, sock):
     try:
-        # Add needed header
-        msg['nick'] = nick
         # Send data
-        print(f'Sending "{msg}"\n')
+        print(f'Sending {text}\n')
         sock.sendall(text.encode())
     finally:
-        print(f'{msg} sent\n')
+        print(f'{text} sent\n')
 
 
 # Main
