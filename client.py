@@ -20,7 +20,7 @@ import copy
 
 # Program initial variables
 serverAddress = ('Localhost', 5000)
-nick = 'BEN'  # User can change this in irc with /nick <NICK>
+nick = 'Guest'  # User can change this in irc with /nick <NICK>
 client = 'client.io'  # Name of actual FIFO .io
 clientPath = './' + client
 instructions = 'Welcome to b-IRC! To send a message, type "./m Hello!" \nDefault channel is "#", to change, type _chan <channel>  NOTE: DO NOT INCLUDE #'
@@ -128,8 +128,7 @@ class pipe(threading.Thread):
                             break
                         else:
                             print('Read: "{0}"'.format(data))
-                            text = self.form(data)
-                            send(text, self.sock)
+                            self.form(data)
         except socket.error as error:
             sys.stderr.write(f'Error: {error}')
         finally:
@@ -140,12 +139,12 @@ class pipe(threading.Thread):
     # PRIVMSG #cats: Hello World! I'm back!\n
     def form(self, data):
         if self.chan == '#':
-            text = 'PRIVMSG ' + self.chan + ': ' + data
+            text = 'PRIVMSG ' + self.chan + ':' + data
 
         else:
-            text = 'PRIVMSG #' + self.chan + ': ' + data
+            text = 'PRIVMSG #' + self.chan + ':' + data
             print(text)
-        return text
+        send(text, self.sock)
 
 
 # Listens for messages from the server
@@ -209,11 +208,6 @@ def main():
     print('Joined thread 1')
     t2.join(3)
     print('Joined thread 2')
-
-    print('Is t1 alive?')
-    print(t1.is_alive())    # Check if T1 timed out
-    print('Is t2 alive?')
-    print(t2.is_alive())    # Check if T2 timed out
 
     while t1.is_alive() and t2.is_alive():
         t1.join(3)

@@ -52,7 +52,7 @@ class master():
                 return self.list(msg['msg'])
 
         print(f'\nmsg: {msg}')
-        print(f'room: {self.room}')
+        print(f'room: {self.room}\n')
 
     # Credit to Tom de Geus on Stackoverflow
     def recursive_find_nick(self, to_match, d):
@@ -234,21 +234,23 @@ def disconnect(client, connection):
     connection.close()
 
 def check(raw, client, connection):
-    print(f'Checking raw: {raw}')
     data = raw.decode()
     print(f'Checking data: {data}')
-
-    if 'ip_, port_' in data:
+    if data == '':
+        return None
+    elif 'ip_, port_' in data:
         print('Initial connection message')
         data = data.replace('ip_, port_', str(client), 1)
         return data
-    else:
+    elif data[0] == '_':
         data = data.strip().lower()
         data = re.sub(r'\W+', '', data)
         print(f'Data: {data}')
         if data == "_disconnect":   # To disconnect client
             disconnect(client, connection)
-
+            return data
+    else:
+        return data
 
 # Listens for FIFO and sends messages to server from FIFO
 class pipe(threading.Thread):
