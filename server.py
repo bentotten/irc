@@ -48,17 +48,19 @@ class master():
             elif msg['cmd'].lower() == '/part':
                 self.rm_client(msg['/client'], msg['chan'], msg['nick'])
             elif msg['cmd'].lower() == '/list' and msg['msg'] == '':
-                return self.list()
+                return self.list(False)
             elif msg['cmd'].lower() == '/list' and msg['msg'] != '':
-                return self.list(msg['msg'])
+                return self.list(msg['msg'], False)
             else:
-                self.send(msg, sock)
+                print('Sending...')
+                #self.send(msg, sock)
 
         print(f'Rooms: {self.room}\n')
 
     def send(self, msg, sock):
-        for client in self.room[msg['chan']]:
-            sock.sendto(msg['msg'], client)
+        #for client in self.room[msg['chan']]:
+        print(f"Sending to {msg['client']}")
+        sock.sendto(msg['msg'].encode(), msg['client'])
 
     # Credit to Tom de Geus on Stackoverflow
     def recursive_find_nick(self, to_match, d):
@@ -98,11 +100,10 @@ class master():
             message['client'] = copy.deepcopy(string[0])
             # Parse Channel
             string = string[1].split(':', 1)
-            print(f'String[0]: {string[0]}')
-            if string[0] == ' #':
-                message['chan'] = copy.deepcopy(string[0].lstrip(' '))
-            else:
-                message['chan'] = '#' + string[0].lstrip(' ')
+            message['chan'] = copy.deepcopy(string[0].lstrip(' '))
+            # Add client to initial channel
+            self.add_client(client, message['chan'], message['nick'])
+
 
         # Else strip PRIVMSG off of front. Needs double for chan to get in []
         else:
@@ -111,11 +112,8 @@ class master():
             string = data.split('PRIVMSG', 1)
             # Parse Channel
             string = string[1].split(':', 1)
-            print(f'String[0]:{string[0]}')
-            if string[0] == ' #':
-                message['chan'] = copy.deepcopy(string[0].lstrip(' '))
-            else:
-                message['chan'] = '#' + string[0].lstrip(' ')
+            message['chan'] = copy.deepcopy(string[0].lstrip(' '))
+            self.add_client(client, message['chan'], message['nick'])
             # Fill out client and nick
             self.var = None
             self.find_nick(client)
@@ -146,6 +144,7 @@ class master():
         return self.recursive_find_client(nick, self.room)
 
     def find_chan(self, chan):
+        print(f'Checking {chan}')
         for key in self.room.keys():
             if chan == key:
                 print(f'{chan} exists')
@@ -163,19 +162,21 @@ class master():
             print('Creating new channel')
             self.create_chan(chan, client)
 
-        nick_fetch = self.find_nick(client)
-        if nick_fetch is None:
-            if nick == '':
-                nick = 'Guest'
-            # Check if already in room
-            array = self.list(chan)
-            if client in array:
-                print('Client already in channel')
-            else:
-                self.room[chan][client] = nick
+        # Check if already in room
+        array = self.list(chan, True)
+        if client in array:
+            print('Client already in channel')
         else:
-            self.room[chan][client] = nick_fetch
-        print(f'{nick} joined {chan}')
+            nick_fetch = self.find_nick(client)
+            if nick_fetch is None:
+                if nick == '':
+                    nick = 'Guest'
+                else:
+                    self.room[chan][client] = copy.deepcopy(nick)
+                    print(f'{nick} joined {chan}')
+            else:
+                self.room[chan][client] = copy.deepcopy(nick_fetch)
+                print(f'{nick_fetch} joined {chan}')
 
     def rm_client(self, client, chan, nick):
         print(f'{client} [{nick}] parting from {chan}')
@@ -188,20 +189,22 @@ class master():
             print(f'Unable to find {chan}')
 
     # Returns all channels
-    def list(self):
+    def list(self, silent):
         rlist = []
         for key in self.room.keys():
             rlist.append(key)
-        print(f'\nLIST: All channels: {rlist}')
+        if silent == False:
+            print(f'\nLIST: All channels: {rlist}')
         return rlist
 
     # Returns a channels members
-    def list(self, chan):
+    def list(self, chan, silent):
         if self.find_chan(chan):
             rlist = []
             for key in self.room[chan]:
                 rlist.append(self.room[chan][key])
-            print(f'\nLIST: All clients in {chan}: {rlist}')
+            if silent == False:
+                print(f'\nLIST: All clients in {chan}: {rlist}')
             return rlist
         else:
             print('Error: Invalid channel')
