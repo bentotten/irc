@@ -50,8 +50,6 @@ class master():
             string = temp.split(' ')
             message['cmd'] = string[0].lstrip('/')
             message['msg'] = string[1].rstrip('\n')
-            print(f'Split 1: {string[0]}')
-            print(f'Split 2: {string[1]}')
         else:
             message['msg'] = string[0].rstrip('\n')
             #print(f'Split 1: {string[0]}')
@@ -65,7 +63,7 @@ class master():
 def main():
     channels = master()
     print(channels)
-    channels.join(initialMsg, client)
+    channels.join(msg, client)
 
 
 if __name__ == '__main__':
