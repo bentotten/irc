@@ -20,10 +20,11 @@ import re
 
 # Program initial variables
 serverAddress = ('Localhost', 5000)
-nick = 'Guest'  # User can change this in irc with /nick <NICK>
+nick = 'BEN'  # User can change this in irc with /nick <NICK>
 client = 'client.io'  # Name of actual FIFO .io
 clientPath = './' + client
 instructions = 'Welcome to b-IRC! To send a message, type "./m Hello!"'
+msg = {'nick': '', 'client': '', 'chan': '', 'cmd': '', 'msg': ''}
 
 
 # Reads in key for server connection
@@ -65,10 +66,16 @@ def make_io():
             return 1
 
 
-# Create a TCP/IP socket
+# Create a TCP/IP socket and send registration message
+# Registration message example
+# :JACK! {<IP>, <PORT>} PRIVMSG #: /JOIN #test\n'  # {IP,port}
 def connection():
-    return socket.create_connection(serverAddress)
-
+    sock = socket.create_connection(serverAddress)
+    # Port and IP will be filled in on the server side
+    text = ':' + nick + '! {ip_, port_} PRIVMSG #: /JOIN #\n'
+    print(text)
+    sock.sendall(text.encode())
+    return sock
 
 def attempt_reconnect(sock):
     print('Attemping reconnect:')
@@ -143,11 +150,15 @@ class listen(threading.Thread):
 
 
 # Send piped inputs to the server
-def send(msg, sock):
+# Formats
+# "PRIVMSG #cats: Hello World! I'm back!\n"
+def send(text, sock):
     try:
+        # Add needed header
+        msg['nick'] = nick
         # Send data
         print(f'Sending "{msg}"\n')
-        sock.sendall(msg.encode())
+        sock.sendall(text.encode())
     finally:
         print(f'{msg} sent\n')
 

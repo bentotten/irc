@@ -1,6 +1,6 @@
 import copy
 # Saves room and client list
-initialMsg = ':JACK! {0.0.0.0, 5000} PRIVMSG #cats: /JOIN #test\n'  # {IP,port}
+initialMsg = ':JACK! {0.0.0.0, 5000} PRIVMSG #: /JOIN #\n'  # {IP,port}
 msg = "PRIVMSG #cats: Hello World! I'm back!\n"
 qmsg = "PRIVMSG #cats: /part #cats"
 client = "('127.0.0.1', 41704)"

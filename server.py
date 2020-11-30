@@ -224,16 +224,20 @@ def make_io():
         return 1
 
 
+def disconnect(client, connection):
+    print(f'{client} disconnecting')
+    connection.sendall(data.encode())
+    connection.close()
+    print(f'{client} has disconnected')
+
+
 def check(data, client, connection):
     data = str(data.decode().strip().lower())
     data = re.sub(r'\W+', '', data)
     print(f'Data: {data}')
     if data == "_disconnect":   # To disconnect client
-        print(f'{client} disconnecting')
-        connection.sendall(data.encode())
-        connection.close()
-        print(f'{client} has disconnected')
-
+        disconnect(client, connection)
+        return 0
 
 # Listens for FIFO and sends messages to server from FIFO
 class pipe(threading.Thread):
@@ -265,13 +269,12 @@ class pipe(threading.Thread):
             print('Closing Server Pipe')
 
 
-# Saves room and client list
-class master():
-    def __init__(self):
-        self.room = [{}]
+def form(data, client):
+    print('FORM DATA GOES HERE')
 
 
 def main():
+    irc = master()
     make_io()   # Setups up pipe
     t1 = pipe()
     t1.setDaemon(True)  # Set to non-blocking thread
@@ -295,7 +298,6 @@ def main():
         while t1.is_alive():
             print('waiting for a connection')
             connection, clientAddress = sock.accept()
-            print('BEN')
             print(connection)
             print(clientAddress)
 
@@ -305,14 +307,16 @@ def main():
 
                 # Get data in chunks and retransmit it
                 while t1.is_alive():
-                    data = connection.recv(2048)
+                    data = connection.recv(512)  # Message size limit: 512b
                     print('received "%s"' % data)
-                    # Check for commands
+                    form(data,clientAddress)
+                    # Check for commands from client
                     check(data, clientAddress, connection)
                     # Send data to connected clients
                     if data:
-                        print('sending data back to the client')
-                        connection.sendall(data)
+                        print('Evaluating data')
+                        irc.eval(data)
+                        # connection.sendall(data)
                     else:
                         print(f'No more data from {clientAddress}')
                         break
