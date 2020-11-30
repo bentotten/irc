@@ -2,6 +2,7 @@ import copy
 # Saves room and client list
 initialMsg = ':GUEST! {0.0.0.0, 5000} PRIVMSG #: /JOIN #test\n'    # {IP, port}
 msg = "PRIVMSG #cats: Hello World! I'm back!\n"
+qmsg = "PRIVMSG #cats: /part #cats"
 connection = "<socket.socket fd=5, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5000), raddr=('127.0.0.1', 41704)>"
 client = "('127.0.0.1', 41704)"
 message = {'nick': '', 'client': '', 'chan': '', 'cmd': '', 'msg': ''}
@@ -19,8 +20,14 @@ class master():
         msg = self.parse(data, client)  # Chop raw data up into hashable pieces
 
         # Add user to new room
-        # if msg['cmd'].lower() == 'join'
-            # self.join(msg)
+        if msg['cmd']:
+            print(f'Processing Command: {msg["cmd"]}')
+            if msg['cmd'].lower() == 'join':
+                self.add_client(msg['client'], msg['chan'], msg['nick'])
+            elif msg['cmd'].lower() == 'part':
+                self.rm_client(msg['client'], msg['chan'], msg['nick'])
+
+
         print(f'\nmsg: {msg}')
         print(f'room: {self.room}')
 
@@ -102,8 +109,8 @@ class master():
         return self.recursive_find_client(nick, self.room)
 
     def find_chan(self, chan):
-        for key in self.room:
-            if key is chan:
+        for key in self.room.keys():
+            if chan == key:
                 print(f'{chan} exists')
                 return True
         print(f'{chan} does not exist')
@@ -129,11 +136,21 @@ class master():
             self.room[chan][client] = nick_fetch
         print(f'{nick} joined {chan}')
 
+    def rm_client(self, client, chan, nick):
+        print(f'{client} [{nick}] parting from {chan}')
+        if self.find_chan(chan):
+            del self.room[chan][client]
+            if self.room[chan] == {}:
+                print(f'{chan} is an empty room. Deleting...')
+                del self.room[chan]
+        else:
+            print(f'Unable to find {chan}')
 
 def main():
     channels = master()
     # channels.eval(initialMsg, client)
     channels.eval(msg, client)
+    channels.eval(qmsg, client)
 
 
 if __name__ == '__main__':
