@@ -51,7 +51,7 @@ class master():
             message['cmd'] = string[0].lstrip('/')
             message['msg'] = string[1].rstrip('\n')
         else:
-            message['msg'] = string[0].rstrip('\n')
+            message['msg'] = string[1].rstrip('\n')
             #print(f'Split 1: {string[0]}')
 
         print(f'Full string at end: {string}')
