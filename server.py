@@ -59,7 +59,7 @@ class master():
         print(f'Rooms: {self.room}\n')
 
     def send(self, msg, connection):
-        print(f"Sending to {msg['client']}")
+        print(f"Sending message to {msg['chan']}")
 
         # Send message
         for client in self.room[msg['chan']]:
@@ -71,6 +71,7 @@ class master():
             #cl = tuple(result)
 
             connection.sendto(msg['msg'].encode(), client)
+            print(f'Message send to {client}')
         return
 
     # Credit to Tom de Geus on Stackoverflow
