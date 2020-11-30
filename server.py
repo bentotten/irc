@@ -43,7 +43,8 @@ class master():
         # Add user to new room
         if msg['cmd']:
             print(f'Processing Command: {msg["cmd"]}')
-            if msg['cmd'].lower() == '/join':
+            if msg['cmd'].lower() == "'/join":
+                print('Joining...')
                 self.add_client(msg['client'], msg['msg'], msg['nick'])
             elif msg['cmd'].lower() == '/part':
                 self.rm_client(msg['/client'], msg['chan'], msg['nick'])
