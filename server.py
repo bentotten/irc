@@ -117,7 +117,8 @@ class master():
             temp = string[1].lstrip(' /')
             string = temp.split(' ')
             message['cmd'] = copy.deepcopy(string[0].lstrip('/'))
-            message['msg'] = copy.deepcopy(string[1].rstrip('\n'))
+            if len(string) == 2:
+                message['msg'] = copy.deepcopy(string[1].rstrip('\n'))
         else:
             message['msg'] = copy.deepcopy(string[1].rstrip('\n'))
         return message
@@ -177,6 +178,7 @@ class master():
         rlist = []
         for key in self.room.keys():
             rlist.append(key)
+        print(f'\nLIST: All channels: {rlist}')
         return rlist
 
     # Returns a channels members
@@ -185,6 +187,7 @@ class master():
             rlist = []
             for key in self.room[chan]:
                 rlist.append(self.room[chan][key])
+            print(f'\nLIST: All clients in {chan}: {rlist}')
             return rlist
         else:
             print('Error: Invalid channel')
