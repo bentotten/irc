@@ -60,6 +60,17 @@ def make_io():
         return 1
 
 
+def check(data, client, connection):
+    data = str(data.decode().strip().lower())
+    data = re.sub(r'\W+', '', data)
+    print(f'Data: {data}')
+    if data == "_disconnect":   # To disconnect client
+        print(f'{client} disconnecting')
+        connection.sendall(data.encode())
+        connection.close()
+        print(f'{client} has disconnected')
+
+
 # Listens for FIFO and sends messages to server from FIFO
 class pipe(threading.Thread):
     def __init__(self):
@@ -90,15 +101,10 @@ class pipe(threading.Thread):
             print('Closing Server Pipe')
 
 
-def check(data, client, connection):
-    data = str(data.decode().strip().lower())
-    data = re.sub(r'\W+', '', data)
-    print(f'Data: {data}')
-    if data == "_disconnect":   # To disconnect client
-        print(f'{client} disconnecting')
-        connection.sendall(data.encode())
-        connection.close()
-        print(f'{client} has disconnected')
+# Saves room and client list
+class master():
+    def __init__(self):
+        self.room = [{}]
 
 
 def main():
@@ -125,6 +131,9 @@ def main():
         while t1.is_alive():
             print('waiting for a connection')
             connection, clientAddress = sock.accept()
+            print('BEN')
+            print(connection)
+            print(clientAddress)
 
             # On connection
             try:
