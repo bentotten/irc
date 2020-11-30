@@ -226,18 +226,23 @@ def make_io():
 
 def disconnect(client, connection):
     print(f'{client} disconnecting')
-    connection.sendall(data.encode())
     connection.close()
-    print(f'{client} has disconnected')
-
 
 def check(data, client, connection):
-    data = str(data.decode().strip().lower())
-    data = re.sub(r'\W+', '', data)
-    print(f'Data: {data}')
-    if data == "_disconnect":   # To disconnect client
-        disconnect(client, connection)
-        return 0
+    print('Checking data')
+    data = data.decode()
+    if 'ip_, port_' in data:
+        print('Initial connection message')
+        print(f'old: {data}')
+        data = data.replace('ip_, port_', str(client), 1)
+        print(f'new: {data}')
+    else:
+        data = data.strip().lower()
+        data = re.sub(r'\W+', '', data)
+        print(f'Data: {data}')
+        if data == "_disconnect":   # To disconnect client
+            disconnect(client, connection)
+
 
 # Listens for FIFO and sends messages to server from FIFO
 class pipe(threading.Thread):
@@ -269,10 +274,6 @@ class pipe(threading.Thread):
             print('Closing Server Pipe')
 
 
-def form(data, client):
-    print('FORM DATA GOES HERE')
-
-
 def main():
     irc = master()
     make_io()   # Setups up pipe
@@ -285,48 +286,48 @@ def main():
     context.load_cert_chain(certfile="certificate.crt", keyfile="certificate.key")
 
     # Create TCP/IP scoket
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sock:
-        # Bind to port
-        print('starting up on %s port %s' % serverAddress)
-        sock.bind(serverAddress)
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sock:
+            # Bind to port
+            print('starting up on %s port %s' % serverAddress)
+            sock.bind(serverAddress)
 
-        # Listen for incomming connections
-        sock.listen(1)
-        # with context.wrap_socket(sock, server_side=True) as ssock:
-        #    # print('waiting for a connection')
-        #    # connection, clientAddress = ssock.accept()
-        while t1.is_alive():
-            print('waiting for a connection')
-            connection, clientAddress = sock.accept()
-            print(connection)
-            print(clientAddress)
+            # Listen for incomming connections
+            sock.listen(1)
+            while t1.is_alive():
+                print('waiting for a connection')
+                connection, clientAddress = sock.accept()
+                print(connection)
+                print(clientAddress)
 
-            # On connection
-            try:
-                print(f'Connection from {clientAddress}')
+                # On connection
+                try:
+                    print(f'Connection from {clientAddress}')
 
-                # Get data in chunks and retransmit it
-                while t1.is_alive():
-                    data = connection.recv(512)  # Message size limit: 512b
-                    print('received "%s"' % data)
-                    form(data,clientAddress)
-                    # Check for commands from client
-                    check(data, clientAddress, connection)
-                    # Send data to connected clients
-                    if data:
-                        print('Evaluating data')
-                        irc.eval(data)
-                        # connection.sendall(data)
-                    else:
-                        print(f'No more data from {clientAddress}')
-                        break
-            except socket.error as error:
-                sys.stderr.write(f'Error: {error}')
-                sys.stderr.write('Client abruptly disconnected')
-            finally:
-                # Close connection
-                print('Closing connection')
-                connection.close()
+                    # Get data in chunks and retransmit it
+                    while t1.is_alive():
+                        data = connection.recv(512)  # Message size limit: 512b
+                        print('received "%s"' % data)
+                        # Check for commands from client
+                        check(data, clientAddress, connection)
+                        # Send data to connected clients
+                        if data:
+                            print('Evaluating data')
+                            #irc.eval(data, clientAddress)
+                            # connection.sendall(data)
+                        else:
+                            print(f'No more data from {clientAddress}')
+                            break
+                except socket.error as error:
+                    sys.stderr.write(f'Error: {error}')
+                    sys.stderr.write('Client abruptly disconnected')
+                finally:
+                    # Close connection
+                    print('Closing connection')
+                    connection.close()
+    except socket.error as error:
+        sys.stderr.write(f'ERROR: {error}')
+        sock.close()
 
 
 if __name__ == '__main__':

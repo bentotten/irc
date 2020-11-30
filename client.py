@@ -72,7 +72,7 @@ def make_io():
 def connection():
     sock = socket.create_connection(serverAddress)
     # Port and IP will be filled in on the server side
-    text = ':' + nick + '! {ip_, port_} PRIVMSG #: /JOIN #\n'
+    text = ':' + nick + '! ip_, port_ PRIVMSG #: /JOIN #\n'
     print(text)
     sock.sendall(text.encode())
     return sock

@@ -5,6 +5,7 @@ msg = "PRIVMSG #cats: Hello World! I'm back!\n"
 qmsg = "PRIVMSG #cats: /part #cats"
 client = "('127.0.0.1', 41704)"
 message = {'nick': '', 'client': '', 'chan': '', 'cmd': '', 'msg': ''}
+test = ":BEN! {('127.0.0.1', 43452)} PRIVMSG #: /JOIN #"
 
 
 class master():
@@ -166,10 +167,11 @@ class master():
 
 def main():
     channels = master()
-    channels.eval(initialMsg, client)
-    channels.eval(msg, client)
-    channels.eval(qmsg, client)
-    print(channels.list('#cats'))
+    #channels.eval(initialMsg, client)
+    #channels.eval(msg, client)
+    #channels.eval(qmsg, client)
+    #print(channels.list('#cats'))
+    channels.eval(test, client)
 
 
 if __name__ == '__main__':
