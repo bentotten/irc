@@ -20,7 +20,7 @@ import copy
 
 # Program initial variables
 serverAddress = ('Localhost', 5000)
-nick = 'Guest'  # User can change this in irc with /nick <NICK>
+nick = 'Ben'  # User can change this in irc with /nick <NICK>
 client = 'client.io'  # Name of actual FIFO .io
 clientPath = './' + client
 instructions = 'Welcome to b-IRC! To send a message, type "./m Hello!" \nDefault channel is "#", to change, type _chan <channel>  NOTE: DO NOT INCLUDE #'
@@ -112,6 +112,11 @@ class pipe(threading.Thread):
                         # Check if user is commanding close
                         if '_stop' == check:
                             print('Stop command. Stopping client')
+                            self.stop = False
+                            break
+                        elif '_disconnect' == check:
+                            print('Disconnect command. Commanding server.')
+                            send('_disconnect', self.sock)
                             self.stop = False
                             break
                         elif '_chan' in check:
@@ -218,7 +223,7 @@ def main():
     # Shutdown connection
     # sock.shutdown(socket.SHUT_WR)
     print('Closing socket connection')
-    if sock != None:
+    if sock is not None:
         sock.close()
     print("Thank you for using b-IRC!\nExiting")
 
