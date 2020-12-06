@@ -43,13 +43,17 @@ class master():
         # Add user to new room
         if msg['cmd']:
             print(f'Processing Command: {msg["cmd"]}')
+            # Join
             if msg['cmd'].lower() == "'/join":
                 print('Joining...')
                 self.add_client(msg['client'], msg['msg'], msg['nick'])
+            # Leave
             elif msg['cmd'].lower() == "'/part'":
                 self.rm_client(msg['/client'], msg['chan'], msg['nick'])
+            # List Channels
             elif msg['cmd'].lower() == "'/list'" and msg['msg'] == '':
                 return self.list(False)
+            # List members of a channel
             elif msg['cmd'].lower() == '/list' and msg['msg'] != '':
                 return self.list_clients(msg['msg'], False)
         else:
@@ -64,11 +68,11 @@ class master():
         # Send message
         for client in self.room[msg['chan']]:
             # Put client back in tuple form
-            #result = client.split(',')
-            #result[0] = result[0].lstrip(" ('")
-            #result[0] = result[0].rstrip("'")
-            #result[1] = int(result[1].rstrip(') '))
-            #cl = tuple(result)
+            # result = client.split(',')
+            # result[0] = result[0].lstrip(" ('")
+            # result[0] = result[0].rstrip("'")
+            # result[1] = int(result[1].rstrip(') '))
+            # cl = tuple(result)
 
             connection.sendto(msg['msg'].encode(), client)
             print(f'Message send to {client}')
@@ -175,14 +179,14 @@ class master():
             self.create_chan(chan, client)
 
         # Check if already in room
-        array = self.list_client(chan, True)
+        array = self.list_client(chan, False)
         if client in array:
             print('Client already in channel')
         else:
             print(f'Adding ${client} to ${chan}')
             nick_fetch = self.find_nick(client)
             nick_fetch = copy.deepcopy(self.var)
-            if nick_fetch is '':
+            if nick_fetch == '':
                 print('Nick not found.')
                 if nick == '':
                     nick = 'Guest'
@@ -193,7 +197,6 @@ class master():
                 self.room[chan][client] = copy.deepcopy(nick_fetch)
                 print(f'{nick_fetch} joined {chan}')
         return
-
 
     def rm_client(self, client, chan, nick):
         print(f'{client} [{nick}] parting from {chan}')
@@ -335,7 +338,7 @@ class connect(threading.Thread):
         clientAddress = self.clientAddress
         irc = self.irc
         sock = self.sock
-        #try:
+        # try:
         if 1 == 1:
             print(f'Connection from {clientAddress}')
             # Get data in chunks
@@ -348,18 +351,18 @@ class connect(threading.Thread):
                 if data:
                     print('Evaluating data')
                     irc.eval(data, clientAddress, sock, connection)
-                    #connection.sendall(data)
+                    # connection.sendall(data)
                 else:
                     print(f'No more data from {clientAddress}')
                     break
-        #except socket.error as error:
-            #sys.stderr.write(f'Error: {error}')
-            #sys.stderr.write('Client abruptly disconnected')
-            #self.stop = False
-        #finally:
+        # except socket.error as error:
+            # sys.stderr.write(f'Error: {error}')
+            # sys.stderr.write('Client abruptly disconnected')
+            # self.stop = False
+        # finally:
             # Close connection
-            #print('Closing connection')
-            #connection.close()
+            # print('Closing connection')
+            # connection.close()
 
 
 def main():
