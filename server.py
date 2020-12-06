@@ -176,24 +176,24 @@ class master():
 
         # Check if already in room
         array = self.list_client(chan, True)
-        print(array)
         if client in array:
             print('Client already in channel')
         else:
             print(f'Adding ${client} to ${chan}')
             nick_fetch = self.find_nick(client)
             nick_fetch = copy.deepcopy(self.var)
-            print(f'Nick fetched: ${nick_fetch}; Nick: ${nick}')
-            if nick_fetch is None:
+            if nick_fetch is '':
                 print('Nick not found.')
                 if nick == '':
                     nick = 'Guest'
                 else:
-                    self.room[chan][client] = nick
+                    self.room[chan][client] = copy.deepcopy(nick)
                     print(f'{nick} joined {chan}')
             else:
-                self.room[chan][client] = nick_fetch
+                self.room[chan][client] = copy.deepcopy(nick_fetch)
                 print(f'{nick_fetch} joined {chan}')
+        return
+
 
     def rm_client(self, client, chan, nick):
         print(f'{client} [{nick}] parting from {chan}')
